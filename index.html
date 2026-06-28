@@ -319,7 +319,9 @@ select:focus{border-color:var(--primary);}
 .option-label.selected-cold{border-color:var(--cold);background:var(--cold-light);}
 .option-label.selected-comfort{border-color:var(--comfort);background:var(--comfort-light);}
 .option-label.selected-good{border-color:var(--comfort);background:var(--comfort-light);}
+.option-label.selected-little{border-color:var(--warning);background:#fffbeb;}
 .option-label.selected-bad{border-color:var(--hot);background:var(--hot-light);}
+.option-label.selected-warning{border-color:var(--warning);background:#fffbeb;}
 textarea{
   width:100%;
   min-height:88px;
@@ -525,7 +527,7 @@ textarea:focus{border-color:var(--primary);}
         <label>科目を選択</label>
         <select id="studentSubject">
           <option value="">-- 選択してください --</option>
-          <option value="線形代数">線形代数</option>
+          <option value="線形代数基礎">線形代数基礎</option>
           <option value="統計学基礎">統計学基礎</option>
           <option value="微分積分基礎">微分積分基礎</option>
           <option value="情報リテラシーb">情報リテラシーb</option>
@@ -546,11 +548,14 @@ textarea:focus{border-color:var(--primary);}
             <label class="option-label"><input type="radio" name="comfort" value="hot" onchange="styleOption(this,'selected-hot')"> 🔴 暑い</label>
             <label class="option-label"><input type="radio" name="comfort" value="ok" onchange="styleOption(this,'selected-comfort')"> 🟢 快適</label>
             <label class="option-label"><input type="radio" name="comfort" value="cold" onchange="styleOption(this,'selected-cold')"> 🔵 寒い</label>
+            <label class="option-label"><input type="radio" name="comfort" value="sound" onchange="styleOption(this,'selected-warning')"> 🔊 音が聞こえにくい</label>
+            <label class="option-label"><input type="radio" name="comfort" value="slide" onchange="styleOption(this,'selected-warning')"> 🖥️ スライドが見えにくい</label>
           </div>
 
           <div class="section-label">📚 講義の理解度</div>
           <div class="option-group" id="understandingGroup">
             <label class="option-label"><input type="radio" name="understanding" value="good" onchange="styleOption(this,'selected-good')"> ✅ 分かった</label>
+            <label class="option-label"><input type="radio" name="understanding" value="little" onchange="styleOption(this,'selected-little')"> 🟡 少し分かった</label>
             <label class="option-label"><input type="radio" name="understanding" value="bad" onchange="styleOption(this,'selected-bad')"> ❌ 分からない</label>
           </div>
 
@@ -701,7 +706,7 @@ window.showStudent = function(){
 window.showTeacher = function(){
   const password = prompt("教員用パスワードを入力してください");
   if(password === null) return;
-  if(password !== "114514810"){
+  if(password !== "250829"){
     alert("パスワードが違います");
     return;
   }
@@ -807,7 +812,7 @@ function drawStudentMarker(){
 window.styleOption = function(radio, cls){
   const group = radio.closest(".option-group");
   group.querySelectorAll(".option-label").forEach(l=>{
-    l.classList.remove("selected-hot","selected-cold","selected-comfort","selected-good","selected-bad");
+    l.classList.remove("selected-hot","selected-cold","selected-comfort","selected-good","selected-littele","selected-bad","selected-warning");
   });
   radio.closest(".option-label").classList.add(cls);
 };
@@ -862,7 +867,7 @@ window.submitStudent = async function(){
     x: Math.round(report.x),
     y: Math.round(report.y),
     comfort: comfortText(report.comfort),
-    understanding: report.understanding === "good" ? "分かった" : "分からない",
+    understanding: understandingText(report.understanding),
     userId: report.userId
   });
 
@@ -941,6 +946,8 @@ function drawHeatmap(canvasId){
     if(p.comfort === "hot") grad.addColorStop(0,"rgba(239,68,68,0.58)");
     if(p.comfort === "ok") grad.addColorStop(0,"rgba(34,197,94,0.55)");
     if(p.comfort === "cold") grad.addColorStop(0,"rgba(56,189,248,0.58)");
+    if(p.comfort === "sound") grad.addColorStop(0,"rgba(245,158,11,0.58)");
+    if(p.comfort === "slide") grad.addColorStop(0,"rgba(168,85,247,0.58)");
     grad.addColorStop(1,"rgba(0,0,0,0)");
     ctx.fillStyle = grad;
     ctx.beginPath();
@@ -1019,8 +1026,18 @@ function comfortText(v){
   if(v==="hot") return "暑い";
   if(v==="ok") return "快適";
   if(v==="cold") return "寒い";
+  if(v==="sound") return "音が聞こえにくい";
+  if(v==="slide") return "スライドが見えにくい";
   return v;
 }
+
+function understandingText(v){
+  if(v==="good") return "分かった";
+  if(v==="little") return "少し分かった";
+  if(v==="bad") return "分からない";
+  return v;
+}
+
 function escapeHtml(text){
   return String(text)
     .replaceAll("&","&amp;")
