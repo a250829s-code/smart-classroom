@@ -521,6 +521,17 @@ textarea:focus{border-color:var(--primary);}
         </select>
       </div>
 
+      <div class="room-select-row">
+        <label>科目を選択</label>
+        <select id="studentSubject">
+          <option value="">-- 選択してください --</option>
+          <option value="線形代数">線形代数</option>
+          <option value="統計学基礎">統計学基礎</option>
+          <option value="微分積分基礎">微分積分基礎</option>
+          <option value="情報リテラシーb">情報リテラシーb</option>
+        </select>
+      </div>
+
       <div class="two-col">
         <div class="card">
           <h3>📍 座席位置をタップ</h3>
@@ -805,6 +816,7 @@ window.styleOption = function(radio, cls){
 // ===== SUBMIT =====
 window.submitStudent = async function(){
   const room = currentRoom;
+  const subject = document.getElementById("studentSubject").value;
   const comfort = document.querySelector('input[name="comfort"]:checked');
   const understanding = document.querySelector('input[name="understanding"]:checked');
 
@@ -813,12 +825,13 @@ window.submitStudent = async function(){
     return;
   }
   if(!room){showToast("⚠️ 教室を選択してください"); return;}
-  if(selectedX === null || selectedY === null){showToast("⚠️ 座席位置をタップしてください"); return;}
+  if(!subject){showToast("⚠️科目を選択してください"); return;}
+  if(selectedX === null || selectedY === null){showToast(" ⚠️座席位置をタップしてください"); return;}
   if(!comfort){showToast("⚠️ 快適度を選択してください"); return;}
   if(!understanding){showToast("⚠️ 理解度を選択してください"); return;}
 
   // 1端末1回制限：Firebase使用時は既存投票を画面側で制限。ローカルも同様。
-  const already = reports.find(r=>r.room===room && r.userId===userId);
+  const already = reports.find(r=>r.room===room && r.subject===subject && r.userId===userId);
   if(already){
     showToast("⚠️ この端末ではこの教室に投票済みです。リセット後に再投票できます");
     return;
@@ -827,6 +840,7 @@ window.submitStudent = async function(){
   const report = {
     id: makeId(),
     room,
+    subject,
     x:selectedX,
     y:selectedY,
     comfort:comfort.value,
@@ -843,6 +857,7 @@ window.submitStudent = async function(){
   await saveToGoogleSheet({
     type: "comfort_report",
     createdAt: new Date(report.createdAt).toLocaleString("ja-JP"),
+    subject: report.subject,
     room: report.room,
     x: Math.round(report.x),
     y: Math.round(report.y),
@@ -858,13 +873,17 @@ window.submitStudent = async function(){
 };
 
 window.submitVent = async function(){
+  const subject = document.getEkementById("studentSubject").value;
+
   if(!currentRoom){showToast("⚠️ 教室を選択してください"); return;}
+  if(!subject){showToast("⚠️科目を選択してください"); return;}
   const vent = {id:makeId(), room:currentRoom, text:"🪟 換気希望", createdAt:Date.now()};
   vents.push(vent);
 
   await saveToGoogleSheet({
     type: "vent",
     createdAt: new Date(vent.createdAt).toLocaleString("ja-JP"),
+    subject: vent.subject,
     room: vent.room,
     x: "",
     y: "",
