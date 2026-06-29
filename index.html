@@ -517,9 +517,14 @@ textarea:focus{border-color:var(--primary);}
         <label>教室を選択</label>
         <select id="studentRoom" onchange="changeRoom(this.value)">
           <option value="">-- 選択してください --</option>
-          <option value="3101">3101</option>
+          <option value="3102A">3102A</option>
+          <option value="3102B">3102B</option>
+          <option value="3103">3103</option>
+          <option value="3104">3104</option>
+          <option value="3201">3201</option>
           <option value="3202">3202</option>
           <option value="3203">3203</option>
+          <option value="3204">3204</option>
         </select>
       </div>
 
@@ -573,9 +578,14 @@ textarea:focus{border-color:var(--primary);}
         <label>教室を選択</label>
         <select id="teacherRoom" onchange="changeRoom(this.value)">
           <option value="">-- 選択してください --</option>
-          <option value="3101">3101</option>
+          <option value="3102A">3102A</option>
+          <option value="3102B">3102B</option>
+          <option value="3103">3103</option>
+          <option value="3104">3104</option>
+          <option value="3201">3201</option>
           <option value="3202">3202</option>
           <option value="3203">3203</option>
+          <option value="3204">3204</option>
         </select>
       </div>
 
@@ -747,30 +757,23 @@ function createRoom(roomId){
 
   if(!currentRoom) return;
 
-  if(currentRoom === "3101"){
-    // 3101も他の教室と同じように、斜め配置ではなく整列した座席配置にする
-    for(let r=0;r<4;r++){
-      for(let c=0;c<4;c++){
-        addDesk(room, 150, 40 + c*170, 100 + r*75);
-      }
+  if(
+  currentRoom === "3102A" ||
+  currentRoom === "3102B" ||
+  currentRoom === "3103" ||
+  currentRoom === "3104" ||
+  currentRoom === "3201" ||
+  currentRoom === "3202" ||
+  currentRoom === "3203" ||
+  currentRoom === "3204"
+){
+  // 全教室共通：横3列・縦6段
+  for(let r=0;r<6;r++){
+    for(let c=0;c<3;c++){
+      addDesk(room, 170, 80 + c*220, 65 + r*58);
     }
   }
-
-  if(currentRoom === "3202"){
-    for(let r=0;r<4;r++){
-      for(let c=0;c<4;c++){
-        addDesk(room, 150, 40 + c*170, 100 + r*75);
-      }
-    }
-  }
-
-  if(currentRoom === "3203"){
-    for(let r=0;r<4;r++){
-      for(let c=0;c<4;c++){
-        addDesk(room, 140, 35 + c*170, 90 + r*80);
-      }
-    }
-  }
+}
 
   if(roomId === "studentRoomMap"){
     room.onclick = function(e){
