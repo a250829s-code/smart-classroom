@@ -757,23 +757,25 @@ function createRoom(roomId){
 
   if(!currentRoom) return;
 
-  if(
-  currentRoom === "3102A" ||
-  currentRoom === "3102B" ||
-  currentRoom === "3103" ||
-  currentRoom === "3104" ||
-  currentRoom === "3201" ||
-  currentRoom === "3202" ||
-  currentRoom === "3203" ||
-  currentRoom === "3204"
-){
-  // 全教室共通：横3列・縦6段
-  for(let r=0;r<6;r++){
-    for(let c=0;c<3;c++){
-      addDesk(room, 170, 80 + c*220, 65 + r*58);
+  const targetRooms = [
+    "3102A",
+    "3102B",
+    "3103",
+    "3104",
+    "3201",
+    "3202",
+    "3203",
+    "3204"
+  ];
+
+  if(targetRooms.includes(currentRoom)){
+    // 全教室共通：横3列・縦6段
+    for(let r=0; r<6; r++){
+      addDeskPercent(room, 28, 4, 65 + r*58);    // 左
+      addDeskPercent(room, 28, 36, 65 + r*58);   // 中央
+      addDeskPercent(room, 28, 68, 65 + r*58);   // 右
     }
   }
-}
 
   if(roomId === "studentRoomMap"){
     room.onclick = function(e){
@@ -781,6 +783,7 @@ function createRoom(roomId){
         showToast("⚠️ 先に教室を選択してください");
         return;
       }
+
       const rect = room.getBoundingClientRect();
       selectedX = (e.clientX - rect.left) * (760 / rect.width);
       selectedY = (e.clientY - rect.top) * (420 / rect.height);
@@ -795,6 +798,14 @@ function addDesk(room, width, left, top){
   desk.style.width=width+"px";
   desk.style.left=left+"px";
   desk.style.top=top+"px";
+  room.appendChild(desk);
+}
+function addDeskPercent(room, widthPercent, leftPercent, top){
+  const desk =document.createElement("div");
+  desk.className = "desk";
+  desk.style.width = widthPercent + "%";
+  desk.style.left = leftPercent + "%";
+  desk.style.top = top + "px";
   room.appendChild(desk);
 }
 
@@ -815,7 +826,7 @@ function drawStudentMarker(){
 window.styleOption = function(radio, cls){
   const group = radio.closest(".option-group");
   group.querySelectorAll(".option-label").forEach(l=>{
-    l.classList.remove("selected-hot","selected-cold","selected-comfort","selected-good","selected-littele","selected-bad","selected-warning");
+    l.classList.remove("selected-hot","selected-cold","selected-comfort","selected-good","selected-little","selected-bad","selected-warning");
   });
   radio.closest(".option-label").classList.add(cls);
 };
@@ -881,7 +892,7 @@ window.submitStudent = async function(){
 };
 
 window.submitVent = async function(){
-  const subject = document.getEkementById("studentSubject").value;
+  const subject = document.getElementById("studentSubject").value;
 
   if(!currentRoom){showToast("⚠️ 教室を選択してください"); return;}
   if(!subject){showToast("⚠️科目を選択してください"); return;}
