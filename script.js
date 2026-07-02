@@ -90,15 +90,24 @@ window.showStudent = function(){
 };
 
 window.showTeacher = function(){
-  const password = prompt("教員用パスワードを入力してください");
 
-  if(password === null){
-    return;
-  }
+  // すでにこのタブで教員認証済みなら、パスワード入力を省略する
+  const isTeacherUnlocked = sessionStorage.getItem("teacherUnlocked");
 
-  if(password !== "250829"){
-    alert("パスワードが違います");
-    return;
+  if(isTeacherUnlocked !== "true"){
+    const password = prompt("教員用パスワードを入力してください");
+
+    if(password === null){
+      return;
+    }
+
+    if(password !== "250829"){
+      alert("パスワードが違います");
+      return;
+    }
+
+    // 認証成功をこのタブ内に保存
+    sessionStorage.setItem("teacherUnlocked", "true");
   }
 
   document.getElementById("studentPage").style.display = "none";
