@@ -1,37 +1,42 @@
-/* =========================================================
-  Googleスプレッドシート保存用
+// ===== Firebase SDK =====
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
-  1. Google Apps Scriptを作る
-  2. デプロイしてWebアプリURLを取得
-  3. 下の GOOGLE_SCRIPT_URL に貼り付ける
-========================================================= */
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  serverTimestamp,
+  query,
+  where,
+  orderBy,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const USE_GOOGLE_SHEETS = true;
 
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwrZg-HyfQQhBDK1bJhxx8Ej40H5qVWJde5SASTukNsiVmqzdyDwCL1xOllJkD771hRUA/exec";
+// ===== Firebase設定 =====
+const firebaseConfig = {
+  apiKey: "AIzaSyBUyO6aAzGQp4QJpOHssoZ1sLGCY_3G71I",
+  authDomain: "smart-classroom-e8dec.firebaseapp.com",
+  projectId: "smart-classroom-e8dec",
+  storageBucket: "smart-classroom-e8dec.firebasestorage.app",
+  messagingSenderId: "643161739601",
+  appId: "1:643161739601:web:8676805e3a2fd82d52c370"
+};
 
-async function saveToGoogleSheet(data){
-  if(!USE_GOOGLE_SHEETS) return;
 
-  if(GOOGLE_SCRIPT_URL.includes("ここに")){
-    console.warn("Google Apps ScriptのURLが未設定です");
-    return;
-  }
+// ===== Firebase初期化 =====
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-  try{
-    await fetch(GOOGLE_SCRIPT_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8"
-      },
-      body: JSON.stringify(data)
-    });
-  }catch(error){
-    console.error(error);
-    showToast("⚠️ スプレッドシート保存に失敗しました");
-  }
-}
+
+// ===== 実証実験ID =====
+const SESSION_ID = "seminar-demo-001";
+
+
+// ===== Firestore監視用 =====
+let unsubscribeReports = null;
+let unsubscribeVents = null;
+
 
 // ===== STATE =====
 const userId = localStorage.getItem("userId") || Math.random().toString(36).slice(2);
@@ -46,6 +51,7 @@ let timerInterval = null;
 let reports = [];
 let replies = [];
 let vents = [];
+
 
 // ===== NAVIGATION =====
 window.showScreen = function(id){
@@ -72,6 +78,7 @@ window.openCafeteria = function(){
 window.openSlido = function(){
   window.open("https://app.sli.do/event/sCfvCB8rXFC13ASj1g8BSw", "_blank");
 };
+
 
 // ===== ROLE =====
 window.showStudent = function(){
@@ -103,6 +110,7 @@ window.showTeacher = function(){
   syncRoomSelects();
   redrawAll();
 };
+
 
 // ===== ROOM =====
 window.changeRoom = function(room){
@@ -155,7 +163,6 @@ function createRoom(roomId){
   ];
 
   if(targetRooms.includes(currentRoom)){
-    // 全教室共通：横3列・縦6段
     for(let r = 0; r < 6; r++){
       addDeskPercent(room, 28, 4, 65 + r * 58);
       addDeskPercent(room, 28, 36, 65 + r * 58);
@@ -214,6 +221,7 @@ function drawStudentMarker(){
   room.appendChild(marker);
 }
 
+
 // ===== OPTION STYLE =====
 window.styleOption = function(radio, selectedClass){
   const group = radio.closest(".option-group");
@@ -232,6 +240,7 @@ window.styleOption = function(radio, selectedClass){
 
   radio.closest(".option-label").classList.add(selectedClass);
 };
+
 
 // ===== SUBMIT =====
 window.submitStudent = async function(){
@@ -271,7 +280,6 @@ window.submitStudent = async function(){
     return;
   }
 
-  // 1端末1回制限
   const already = reports.find(report => {
     return report.room === room &&
            report.subject === subject &&
@@ -284,41 +292,30 @@ window.submitStudent = async function(){
   }
 
   const report = {
-    id: makeId(),
+    sessionId: SESSION_ID,
     room: room,
     subject: subject,
-    x: selectedX,
-    y: selectedY,
+    x: Math.round(selectedX),
+    y: Math.round(selectedY),
     comfort: comfort.value,
     understanding: understanding.value,
     userId: userId,
-    createdAt: Date.now()
+    createdAt: serverTimestamp()
   };
 
-  // 画面表示用にブラウザ内にも保存
-  reports.push(report);
-  redrawAll();
+  try{
+    await addDoc(collection(db, "reports"), report);
 
-  // Googleスプレッドシートへ保存
-  await saveToGoogleSheet({
-    type: "comfort_report",
-    createdAt: new Date(report.createdAt).toLocaleString("ja-JP"),
-    subject: report.subject,
-    room: report.room,
-    x: Math.round(report.x),
-    y: Math.round(report.y),
-    comfort: comfortText(report.comfort),
-    understanding: understandingText(report.understanding),
-    userId: report.userId
-  });
+    lockUntil = Date.now() + 5 * 60 * 1000;
+    localStorage.setItem("comfortLockUntil", String(lockUntil));
 
-  lockUntil = Date.now() + 5 * 60 * 1000;
+    startTimer();
 
-  localStorage.setItem("comfortLockUntil", String(lockUntil));
-
-  startTimer();
-
-  showToast("✅ 送信しました");
+    showToast("✅ Firebaseに送信しました");
+  }catch(error){
+    console.error(error);
+    showToast("⚠️ 送信に失敗しました。Firebase設定を確認してください");
+  }
 };
 
 window.submitVent = async function(){
@@ -335,30 +332,24 @@ window.submitVent = async function(){
   }
 
   const vent = {
-    id: makeId(),
+    sessionId: SESSION_ID,
     room: currentRoom,
     subject: subject,
-    text: "🪟 換気希望",
+    text: "換気希望",
     userId: userId,
-    createdAt: Date.now()
+    createdAt: serverTimestamp()
   };
 
-  vents.push(vent);
+  try{
+    await addDoc(collection(db, "vents"), vent);
 
-  await saveToGoogleSheet({
-    type: "vent",
-    createdAt: new Date(vent.createdAt).toLocaleString("ja-JP"),
-    subject: vent.subject,
-    room: vent.room,
-    x: "",
-    y: "",
-    comfort: "換気希望",
-    understanding: "",
-    userId: userId
-  });
-
-  showToast("🪟 換気希望を送信しました");
+    showToast("🪟 換気希望をFirebaseに送信しました");
+  }catch(error){
+    console.error(error);
+    showToast("⚠️ 換気希望の送信に失敗しました");
+  }
 };
+
 
 // ===== TIMER =====
 function startTimerIfNeeded(){
@@ -398,6 +389,76 @@ function startTimer(){
     display.textContent = `${minutes}:${String(seconds).padStart(2, "0")}`;
   }, 1000);
 }
+
+
+// ===== FIRESTORE REALTIME =====
+function startFirestoreListener(){
+  if(unsubscribeReports){
+    unsubscribeReports();
+  }
+
+  if(unsubscribeVents){
+    unsubscribeVents();
+  }
+
+  const reportsQuery = query(
+    collection(db, "reports"),
+    where("sessionId", "==", SESSION_ID),
+  );
+
+  unsubscribeReports = onSnapshot(reportsQuery, function(snapshot){
+    reports = [];
+
+    snapshot.forEach(function(doc){
+      const data = doc.data();
+
+      reports.push({
+        id: doc.id,
+        sessionId: data.sessionId,
+        room: data.room,
+        subject: data.subject,
+        x: data.x,
+        y: data.y,
+        comfort: data.comfort,
+        understanding: data.understanding,
+        userId: data.userId,
+        createdAt: data.createdAt
+      });
+    });
+
+    redrawAll();
+  }, function(error){
+    console.error(error);
+    showToast("⚠️ Firestoreの読み込みに失敗しました");
+  });
+
+  const ventsQuery = query(
+    collection(db, "vents"),
+    where("sessionId", "==", SESSION_ID),
+  );
+
+  unsubscribeVents = onSnapshot(ventsQuery, function(snapshot){
+    vents = [];
+
+    snapshot.forEach(function(doc){
+      const data = doc.data();
+
+      vents.push({
+        id: doc.id,
+        sessionId: data.sessionId,
+        room: data.room,
+        subject: data.subject,
+        text: data.text,
+        userId: data.userId,
+        createdAt: data.createdAt
+      });
+    });
+  }, function(error){
+    console.error(error);
+    showToast("⚠️ 換気希望の読み込みに失敗しました");
+  });
+}
+
 
 // ===== DRAW =====
 function redrawAll(){
@@ -539,7 +600,7 @@ function updateGraph(){
 
 window.resetHeatmap = async function(){
   const result = confirm(
-    "この画面上のローカルデータをリセットしますか？\nスプレッドシート上の過去データは削除されません。"
+    "この画面上のローカルデータをリセットしますか？\nFirebase上の過去データは削除されません。"
   );
 
   if(!result){
@@ -574,6 +635,7 @@ window.resetHeatmap = async function(){
   showToast("🔄 リセットしました");
 };
 
+
 // ===== UTIL =====
 function showToast(message){
   const toast = document.getElementById("toast");
@@ -586,29 +648,9 @@ function showToast(message){
   }, 3200);
 }
 
-function makeId(){
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-}
-
-function comfortText(value){
-  if(value === "hot") return "暑い";
-  if(value === "ok") return "快適";
-  if(value === "cold") return "寒い";
-  if(value === "sound") return "音が聞こえにくい";
-  if(value === "slide") return "スライドが見えにくい";
-
-  return value;
-}
-
-function understandingText(value){
-  if(value === "good") return "分かった";
-  if(value === "little") return "少し分かった";
-  if(value === "bad") return "分からない";
-
-  return value;
-}
 
 // ===== 初期化 =====
 createRoom("studentRoomMap");
 createRoom("teacherRoomMap");
 startTimerIfNeeded();
+startFirestoreListener();
