@@ -4,461 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>スマート教室システム</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-
-<style>
-:root{
-  --bg:#f0f2f7;
-  --surface:#ffffff;
-  --primary:#2563eb;
-  --primary-light:#eff6ff;
-  --primary-dark:#1d4ed8;
-  --text:#1e293b;
-  --text-muted:#64748b;
-  --border:#e2e8f0;
-  --hot:#ef4444;
-  --hot-light:#fef2f2;
-  --cold:#38bdf8;
-  --cold-light:#f0f9ff;
-  --comfort:#22c55e;
-  --comfort-light:#f0fdf4;
-  --warning:#f59e0b;
-  --radius:16px;
-  --shadow:0 2px 18px rgba(0,0,0,0.08);
-}
-
-*{box-sizing:border-box;margin:0;padding:0;}
-
-body{
-  min-height:100vh;
-  font-family:'Noto Sans JP',sans-serif;
-  background:linear-gradient(180deg,#dfefff,#f7f9fc 45%,#f0f2f7);
-  color:var(--text);
-}
-
-button,select,textarea,input{font-family:'Noto Sans JP',sans-serif;}
-button{cursor:pointer;}
-.screen{display:none;}
-.screen.active{display:block;}
-
-/* ===== TOP ===== */
-#topPage{
-  max-width:520px;
-  margin:0 auto;
-  padding:48px 24px;
-}
-.top-title{
-  font-size:24px;
-  font-weight:700;
-  margin-bottom:8px;
-}
-.top-subtitle{
-  font-size:14px;
-  color:var(--text-muted);
-  margin-bottom:28px;
-}
-.system-list{
-  display:flex;
-  flex-direction:column;
-  gap:14px;
-}
-.system-card{
-  background:rgba(255,255,255,0.92);
-  border:1.5px solid var(--border);
-  border-radius:var(--radius);
-  padding:20px 24px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  box-shadow:var(--shadow);
-  transition:all .18s;
-}
-.system-card:hover{
-  border-color:var(--primary);
-  background:var(--primary-light);
-  transform:translateY(-1px);
-}
-.card-name{font-size:17px;font-weight:700;}
-.card-desc{font-size:13px;color:var(--text-muted);margin-top:4px;}
-.card-arrow{font-size:22px;color:var(--text-muted);}
-
-/* ===== PAGE COMMON ===== */
-.inner-header{
-  position:sticky;
-  top:0;
-  z-index:100;
-  background:rgba(255,255,255,0.9);
-  backdrop-filter:blur(18px);
-  border-bottom:1px solid var(--border);
-  padding:16px 22px;
-  box-shadow:0 1px 8px rgba(0,0,0,0.06);
-}
-.inner-header-title{font-size:18px;font-weight:700;}
-.inner-body{
-  max-width:1120px;
-  margin:0 auto;
-  padding:26px 18px 44px;
-}
-.bottom-nav{text-align:center;margin-top:30px;}
-.bottom-back-btn{
-  padding:12px 28px;
-  border-radius:12px;
-  border:1.5px solid var(--border);
-  background:var(--surface);
-  color:var(--text-muted);
-  font-size:14px;
-  font-weight:700;
-  box-shadow:var(--shadow);
-}
-.bottom-back-btn:hover{
-  border-color:var(--primary);
-  color:var(--primary);
-  background:var(--primary-light);
-}
-
-/* ===== MODE ===== */
-.role-selector{
-  display:flex;
-  gap:12px;
-  margin-bottom:22px;
-  flex-wrap:wrap;
-}
-.role-btn{
-  min-width:160px;
-  padding:13px 22px;
-  border-radius:12px;
-  border:2px solid var(--border);
-  background:var(--surface);
-  color:var(--text);
-  font-size:15px;
-  font-weight:700;
-  transition:all .18s;
-}
-.role-btn:hover{border-color:var(--primary);color:var(--primary);}
-.role-btn.active{background:var(--primary);border-color:var(--primary);color:white;}
-
-.room-select-row{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  margin-bottom:20px;
-  flex-wrap:wrap;
-}
-.room-select-row label{font-size:14px;font-weight:700;color:var(--text-muted);}
-select{
-  padding:10px 16px;
-  border-radius:10px;
-  border:1.5px solid var(--border);
-  background:var(--surface);
-  color:var(--text);
-  outline:none;
-}
-select:focus{border-color:var(--primary);}
-
-/* ===== LAYOUT ===== */
-.two-col{
-  display:grid;
-  grid-template-columns:1.15fr .85fr;
-  gap:20px;
-  align-items:start;
-}
-.three-col{
-  display:grid;
-  grid-template-columns:1.15fr .85fr 1fr;
-  gap:20px;
-  align-items:start;
-}
-@media(max-width:900px){.two-col,.three-col{grid-template-columns:1fr;}}
-.card{
-  background:rgba(255,255,255,0.96);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  padding:22px;
-  box-shadow:var(--shadow);
-}
-.card h3{
-  font-size:13px;
-  font-weight:700;
-  color:var(--text-muted);
-  text-transform:uppercase;
-  letter-spacing:.5px;
-  margin-bottom:14px;
-}
-.small{font-size:13px;color:var(--text-muted);text-align:center;margin-top:4px;}
-
-/* ===== REAL CLASSROOM HEATMAP ===== */
-.classroom{
-  position:relative;
-  width:100%;
-  max-width:760px;
-  height:420px;
-  margin:0 auto;
-  border-radius:24px;
-  overflow:hidden;
-  background:linear-gradient(180deg,#fafafa,#ececec);
-  border:2px solid #ddd;
-}
-.classroom canvas{
-  position:absolute;
-  left:0;
-  top:0;
-  width:100%;
-  height:100%;
-  opacity:.76;
-  pointer-events:none;
-  z-index:10;
-}
-.board{
-  position:absolute;
-  top:16px;
-  left:50%;
-  transform:translateX(-50%);
-  width:300px;
-  height:26px;
-  border-radius:10px;
-  background:#2d2d2d;
-  z-index:3;
-}
-.teacherText{
-  position:absolute;
-  top:50px;
-  left:50%;
-  transform:translateX(-50%);
-  color:#666;
-  font-size:12px;
-  z-index:3;
-}
-.window{
-  position:absolute;
-  right:0;
-  top:0;
-  width:14px;
-  height:100%;
-  background:linear-gradient(#c9ecff,#eef9ff);
-  z-index:2;
-}
-.door{
-  position:absolute;
-  bottom:12px;
-  left:14px;
-  width:90px;
-  height:14px;
-  border-radius:10px;
-  background:#8b5a2b;
-  z-index:2;
-}
-.desk{
-  position:absolute;
-  height:30px;
-  border-radius:16px;
-  background:#d7d7d7;
-  border:1px solid #c9c9c9;
-  z-index:2;
-}
-.seat-marker{
-  position:absolute;
-  width:22px;
-  height:22px;
-  border-radius:50%;
-  background:var(--primary);
-  border:3px solid white;
-  box-shadow:0 4px 12px rgba(0,0,0,.25);
-  transform:translate(-50%,-50%);
-  z-index:60;
-}
-.countBubble{
-  position:absolute;
-  transform:translate(-50%,-50%);
-  background:#1c1c1e;
-  color:white;
-  padding:6px 10px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:700;
-  z-index:50;
-}
-.floatComment{
-  position:absolute;
-  transform:translate(-50%,-50%);
-  padding:8px 12px;
-  border-radius:18px;
-  color:white;
-  font-size:13px;
-  font-weight:700;
-  white-space:nowrap;
-  z-index:70;
-  animation:fadeout 6s forwards;
-}
-@keyframes fadeout{0%{opacity:1;}80%{opacity:1;}100%{opacity:0;}}
-
-/* ===== OPTIONS ===== */
-.section-label{
-  font-size:13px;
-  font-weight:700;
-  color:var(--text-muted);
-  margin:16px 0 8px;
-  text-transform:uppercase;
-  letter-spacing:.4px;
-}
-.option-group{display:flex;flex-direction:column;gap:10px;}
-.option-label{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:10px 14px;
-  border-radius:10px;
-  border:1.5px solid var(--border);
-  background:white;
-  cursor:pointer;
-  transition:all .15s;
-  font-size:14px;
-}
-.option-label:hover{border-color:var(--primary);background:var(--primary-light);}
-.option-label input[type="radio"]{accent-color:var(--primary);width:16px;height:16px;}
-.option-label.selected-hot{border-color:var(--hot);background:var(--hot-light);}
-.option-label.selected-cold{border-color:var(--cold);background:var(--cold-light);}
-.option-label.selected-comfort{border-color:var(--comfort);background:var(--comfort-light);}
-.option-label.selected-good{border-color:var(--comfort);background:var(--comfort-light);}
-.option-label.selected-little{border-color:var(--warning);background:#fffbeb;}
-.option-label.selected-bad{border-color:var(--hot);background:var(--hot-light);}
-.option-label.selected-warning{border-color:var(--warning);background:#fffbeb;}
-textarea{
-  width:100%;
-  min-height:88px;
-  border:1.5px solid var(--border);
-  border-radius:10px;
-  padding:10px 12px;
-  font-size:14px;
-  resize:vertical;
-  outline:none;
-}
-textarea:focus{border-color:var(--primary);}
-.required-note{display:none;font-size:12px;color:var(--hot);font-weight:700;margin-top:6px;}
-.required-note.visible{display:block;}
-.submit-btn{
-  width:100%;
-  margin-top:18px;
-  padding:14px;
-  border:none;
-  border-radius:12px;
-  background:var(--primary);
-  color:white;
-  font-size:15px;
-  font-weight:700;
-}
-.submit-btn:hover{background:var(--primary-dark);}
-.secondary-btn{
-  width:100%;
-  margin-top:10px;
-  padding:12px;
-  border:none;
-  border-radius:12px;
-  background:#64748b;
-  color:white;
-  font-weight:700;
-}
-.vent-btn{background:#5856d6;}
-.slido-btn{background:#16a34a;}
-.slido-btn:hover{background:#15803d;}
-
-/* ===== TIMER ===== */
-.timer-banner{
-  display:none;
-  align-items:center;
-  gap:10px;
-  padding:12px 16px;
-  border-radius:12px;
-  background:#fef3c7;
-  border:1.5px solid #fbbf24;
-  margin-bottom:16px;
-  font-size:14px;
-  color:#92400e;
-  font-weight:700;
-}
-.timer-banner.visible{display:flex;}
-#timerDisplay{font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700;}
-
-/* ===== GRAPH ===== */
-.graph-wrap{
-  display:flex;
-  align-items:flex-end;
-  justify-content:center;
-  gap:32px;
-  height:180px;
-  padding-bottom:4px;
-  border-bottom:2px solid var(--border);
-  margin-bottom:12px;
-}
-.bar-col{display:flex;flex-direction:column;align-items:center;gap:6px;}
-.bar-fill{
-  width:60px;
-  min-height:20px;
-  border-radius:8px 8px 0 0;
-  display:flex;
-  align-items:flex-start;
-  justify-content:center;
-  padding-top:8px;
-  color:white;
-  font-family:'DM Sans',sans-serif;
-  font-size:18px;
-  font-weight:700;
-  transition:height .35s;
-}
-.bar-good{background:var(--comfort);}
-.bar-bad{background:var(--hot);}
-.bar-label{font-size:13px;color:var(--text-muted);font-weight:700;}
-.legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:12px;}
-.legend-item{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);}
-.legend-dot{width:12px;height:12px;border-radius:50%;}
-.reset-btn{
-  width:100%;
-  margin-top:16px;
-  padding:12px;
-  border-radius:10px;
-  border:1.5px solid var(--hot);
-  background:var(--hot-light);
-  color:var(--hot);
-  font-weight:700;
-}
-.reset-btn:hover{background:var(--hot);color:white;}
-
-/* ===== COMMENTS ===== */
-.comment-list{display:flex;flex-direction:column;gap:12px;max-height:440px;overflow-y:auto;}
-.comment-item{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px;font-size:13px;line-height:1.55;}
-.comment-meta{font-size:11px;color:var(--text-muted);margin-top:6px;}
-.comment-empty{text-align:center;color:var(--text-muted);font-style:italic;padding:20px 0;font-size:13px;}
-.reply-box{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);}
-.reply-textarea{min-height:58px;font-size:13px;}
-.reply-btn{margin-top:8px;padding:8px 12px;border:none;border-radius:8px;background:var(--primary);color:white;font-size:13px;font-weight:700;}
-.teacher-reply{margin-top:10px;padding:10px;background:var(--primary-light);border-left:4px solid var(--primary);border-radius:8px;font-size:13px;}
-.reply-label{font-weight:700;color:var(--primary);margin-bottom:4px;}
-.questionBadge{background:var(--hot);color:white;border-radius:999px;padding:3px 9px;font-size:12px;margin-left:6px;}
-
-/* ===== CAFETERIA ===== */
-.coming-soon{text-align:center;padding:80px 20px;color:var(--text-muted);}
-.cs-icon{font-size:64px;margin-bottom:16px;}
-.coming-soon h3{font-size:20px;color:var(--text);margin-bottom:8px;}
-
-/* ===== TOAST ===== */
-.toast{
-  position:fixed;
-  bottom:24px;
-  right:24px;
-  max-width:320px;
-  background:#1e293b;
-  color:white;
-  padding:14px 20px;
-  border-radius:12px;
-  box-shadow:0 8px 32px rgba(0,0,0,.18);
-  opacity:0;
-  transform:translateY(80px);
-  transition:all .28s;
-  z-index:500;
-  font-size:14px;
-  font-weight:700;
-}
-.toast.show{opacity:1;transform:translateY(0);}
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -550,20 +98,49 @@ textarea:focus{border-color:var(--primary);}
         <div class="card">
           <div class="section-label">🌡️ 快適度</div>
           <div class="option-group" id="comfortGroup">
-            <label class="option-label"><input type="radio" name="comfort" value="hot" onchange="styleOption(this,'selected-hot')"> 🔴 暑い</label>
-            <label class="option-label"><input type="radio" name="comfort" value="ok" onchange="styleOption(this,'selected-comfort')"> 🟢 快適</label>
-            <label class="option-label"><input type="radio" name="comfort" value="cold" onchange="styleOption(this,'selected-cold')"> 🔵 寒い</label>
-            <label class="option-label"><input type="radio" name="comfort" value="sound" onchange="styleOption(this,'selected-warning')"> 🔊 音が聞こえにくい</label>
-            <label class="option-label"><input type="radio" name="comfort" value="slide" onchange="styleOption(this,'selected-warning')"> 🖥️ スライドが見えにくい</label>
+            <label class="option-label">
+              <input type="radio" name="comfort" value="hot" onchange="styleOption(this,'selected-hot')">
+              🔴 暑い
+            </label>
+
+            <label class="option-label">
+              <input type="radio" name="comfort" value="ok" onchange="styleOption(this,'selected-comfort')">
+              🟢 快適
+            </label>
+
+            <label class="option-label">
+              <input type="radio" name="comfort" value="cold" onchange="styleOption(this,'selected-cold')">
+              🔵 寒い
+            </label>
+
+            <label class="option-label">
+              <input type="radio" name="comfort" value="sound" onchange="styleOption(this,'selected-warning')">
+              🔊 音が聞こえにくい
+            </label>
+
+            <label class="option-label">
+              <input type="radio" name="comfort" value="slide" onchange="styleOption(this,'selected-warning')">
+              🖥️ スライドが見えにくい
+            </label>
           </div>
 
           <div class="section-label">📚 講義の理解度</div>
           <div class="option-group" id="understandingGroup">
-            <label class="option-label"><input type="radio" name="understanding" value="good" onchange="styleOption(this,'selected-good')"> ✅ 分かった</label>
-            <label class="option-label"><input type="radio" name="understanding" value="little" onchange="styleOption(this,'selected-little')"> 🟡 少し分かった</label>
-            <label class="option-label"><input type="radio" name="understanding" value="bad" onchange="styleOption(this,'selected-bad')"> ❌ 分からない</label>
-          </div>
+            <label class="option-label">
+              <input type="radio" name="understanding" value="good" onchange="styleOption(this,'selected-good')">
+              ✅ 分かった
+            </label>
 
+            <label class="option-label">
+              <input type="radio" name="understanding" value="little" onchange="styleOption(this,'selected-little')">
+              🟡 少し分かった
+            </label>
+
+            <label class="option-label">
+              <input type="radio" name="understanding" value="bad" onchange="styleOption(this,'selected-bad')">
+              ❌ 分からない
+            </label>
+          </div>
 
           <button class="submit-btn" onclick="submitStudent()">送信する</button>
           <button class="secondary-btn slido-btn" onclick="openSlido()">💬 匿名で質問・コメントする</button>
@@ -595,29 +172,52 @@ textarea:focus{border-color:var(--primary);}
           <div class="small">赤：暑い / 緑：快適 / 青：寒い</div>
           <br>
           <div class="classroom" id="teacherRoomMap"></div>
+
           <div class="legend">
-            <div class="legend-item"><div class="legend-dot" style="background:var(--hot)"></div>暑い</div>
-            <div class="legend-item"><div class="legend-dot" style="background:var(--comfort)"></div>快適</div>
-            <div class="legend-item"><div class="legend-dot" style="background:var(--cold)"></div>寒い</div>
+            <div class="legend-item">
+              <div class="legend-dot hot-dot"></div>
+              暑い
+            </div>
+
+            <div class="legend-item">
+              <div class="legend-dot comfort-dot"></div>
+              快適
+            </div>
+
+            <div class="legend-item">
+              <div class="legend-dot cold-dot"></div>
+              寒い
+            </div>
           </div>
+
           <button class="reset-btn" onclick="resetHeatmap()">🔄 ヒートマップリセット</button>
         </div>
 
         <div class="card">
           <h3>📊 講義理解度</h3>
+
           <div class="graph-wrap">
             <div class="bar-col">
               <div id="goodBar" class="bar-fill bar-good" style="height:20px">0</div>
               <div class="bar-label">分かった</div>
             </div>
+
             <div class="bar-col">
               <div id="badBar" class="bar-fill bar-bad" style="height:20px">0</div>
               <div class="bar-label">分からない</div>
             </div>
           </div>
+
           <div class="legend">
-            <div class="legend-item"><div class="legend-dot" style="background:var(--comfort)"></div>分かった：<strong id="goodCount">0</strong>名</div>
-            <div class="legend-item"><div class="legend-dot" style="background:var(--hot)"></div>分からない：<strong id="badCount">0</strong>名</div>
+            <div class="legend-item">
+              <div class="legend-dot comfort-dot"></div>
+              分かった：<strong id="goodCount">0</strong>名
+            </div>
+
+            <div class="legend-item">
+              <div class="legend-dot hot-dot"></div>
+              分からない：<strong id="badCount">0</strong>名
+            </div>
           </div>
         </div>
       </div>
@@ -631,441 +231,25 @@ textarea:focus{border-color:var(--primary);}
 
 <!-- ===== CAFETERIA ===== -->
 <div id="cafeteriaPage" class="screen">
-  <div class="inner-header"><div class="inner-header-title">🍱 学食予約システム</div></div>
+  <div class="inner-header">
+    <div class="inner-header-title">🍱 学食予約システム</div>
+  </div>
+
   <div class="inner-body">
     <div class="coming-soon">
       <div class="cs-icon">🍱</div>
       <h3>学食予約システム</h3>
       <p>今後追加予定です</p>
     </div>
-    <div class="bottom-nav"><button class="bottom-back-btn" onclick="goTop()">← システム一覧へ戻る</button></div>
+
+    <div class="bottom-nav">
+      <button class="bottom-back-btn" onclick="goTop()">← システム一覧へ戻る</button>
+    </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
-<script type="module">
-/* =========================================================
-  Googleスプレッドシート保存用
-
-  1. Google Apps Scriptを作る
-  2. デプロイしてWebアプリURLを取得
-  3. 下の GOOGLE_SCRIPT_URL に貼り付ける
-========================================================= */
-const USE_GOOGLE_SHEETS = true;
-
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwrZg-HyfQQhBDK1bJhxx8Ej40H5qVWJde5SASTukNsiVmqzdyDwCL1xOllJkD771hRUA/exec";
-
-async function saveToGoogleSheet(data){
-  if(!USE_GOOGLE_SHEETS) return;
-
-  if(GOOGLE_SCRIPT_URL.includes("ここに")){
-    console.warn("Google Apps ScriptのURLが未設定です");
-    return;
-  }
-
-  try{
-    await fetch(GOOGLE_SCRIPT_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8"
-      },
-      body: JSON.stringify(data)
-    });
-  }catch(error){
-    console.error(error);
-    showToast("⚠️ スプレッドシート保存に失敗しました");
-  }
-}
-
-// ===== STATE =====
-const userId = localStorage.getItem("userId") || Math.random().toString(36).slice(2);
-localStorage.setItem("userId", userId);
-
-let currentRoom = "";
-let selectedX = null;
-let selectedY = null;
-let lockUntil = Number(localStorage.getItem("comfortLockUntil") || 0);
-let timerInterval = null;
-let reports = [];
-let replies = [];
-let vents = [];
-
-// ===== NAVIGATION =====
-window.showScreen = function(id){
-  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-};
-window.goTop = ()=>showScreen("topPage");
-window.openComfort = ()=>{
-  showScreen("comfortPage");
-  startTimerIfNeeded();
-};
-window.openCafeteria = ()=>showScreen("cafeteriaPage");
-window.openSlido = ()=>window.open("https://app.sli.do/event/sCfvCB8rXFC13ASj1g8BSw", "_blank");
-
-// ===== ROLE =====
-window.showStudent = function(){
-  document.getElementById("studentPage").style.display="block";
-  document.getElementById("teacherPage").style.display="none";
-  document.getElementById("roleStudent").classList.add("active");
-  document.getElementById("roleTeacher").classList.remove("active");
-};
-
-window.showTeacher = function(){
-  const password = prompt("教員用パスワードを入力してください");
-  if(password === null) return;
-  if(password !== "250829"){
-    alert("パスワードが違います");
-    return;
-  }
-  document.getElementById("studentPage").style.display="none";
-  document.getElementById("teacherPage").style.display="block";
-  document.getElementById("roleTeacher").classList.add("active");
-  document.getElementById("roleStudent").classList.remove("active");
-  syncRoomSelects();
-  redrawAll();
-};
-
-// ===== ROOM =====
-window.changeRoom = function(room){
-  currentRoom = room;
-  syncRoomSelects();
-  createRoom("studentRoomMap");
-  createRoom("teacherRoomMap");
-  selectedX = null;
-  selectedY = null;
-  redrawAll();
-  if(room) showToast(`🏫 ${room}教室を表示中`);
-};
-
-function syncRoomSelects(){
-  document.getElementById("studentRoom").value = currentRoom;
-  document.getElementById("teacherRoom").value = currentRoom;
-}
-
-function createRoom(roomId){
-  const room = document.getElementById(roomId);
-  room.innerHTML = `
-    <canvas id="${roomId}Canvas" width="760" height="420"></canvas>
-    <div class="board"></div>
-    <div class="teacherText">教員</div>
-    <div class="window"></div>
-    <div class="door"></div>
-  `;
-
-  if(!currentRoom) return;
-
-  const targetRooms = [
-    "3102A",
-    "3102B",
-    "3103",
-    "3104",
-    "3201",
-    "3202",
-    "3203",
-    "3204"
-  ];
-
-  if(targetRooms.includes(currentRoom)){
-    // 全教室共通：横3列・縦6段
-    for(let r=0; r<6; r++){
-      addDeskPercent(room, 28, 4, 65 + r*58);    // 左
-      addDeskPercent(room, 28, 36, 65 + r*58);   // 中央
-      addDeskPercent(room, 28, 68, 65 + r*58);   // 右
-    }
-  }
-
-  if(roomId === "studentRoomMap"){
-    room.onclick = function(e){
-      if(!currentRoom){
-        showToast("⚠️ 先に教室を選択してください");
-        return;
-      }
-
-      const rect = room.getBoundingClientRect();
-      selectedX = (e.clientX - rect.left) * (760 / rect.width);
-      selectedY = (e.clientY - rect.top) * (420 / rect.height);
-      drawStudentMarker();
-    };
-  }
-}
-
-function addDesk(room, width, left, top){
-  const desk = document.createElement("div");
-  desk.className="desk";
-  desk.style.width=width+"px";
-  desk.style.left=left+"px";
-  desk.style.top=top+"px";
-  room.appendChild(desk);
-}
-function addDeskPercent(room, widthPercent, leftPercent, top){
-  const desk =document.createElement("div");
-  desk.className = "desk";
-  desk.style.width = widthPercent + "%";
-  desk.style.left = leftPercent + "%";
-  desk.style.top = top + "px";
-  room.appendChild(desk);
-}
-
-function drawStudentMarker(){
-  const room = document.getElementById("studentRoomMap");
-  const old = document.getElementById("seatMarker");
-  if(old) old.remove();
-  if(selectedX === null || selectedY === null) return;
-  const marker = document.createElement("div");
-  marker.id="seatMarker";
-  marker.className="seat-marker";
-  marker.style.left=(selectedX/760*100)+"%";
-  marker.style.top=(selectedY/420*100)+"%";
-  room.appendChild(marker);
-}
-
-// ===== OPTION STYLE =====
-window.styleOption = function(radio, cls){
-  const group = radio.closest(".option-group");
-  group.querySelectorAll(".option-label").forEach(l=>{
-    l.classList.remove("selected-hot","selected-cold","selected-comfort","selected-good","selected-little","selected-bad","selected-warning");
-  });
-  radio.closest(".option-label").classList.add(cls);
-};
-
-
-// ===== SUBMIT =====
-window.submitStudent = async function(){
-  const room = currentRoom;
-  const subject = document.getElementById("studentSubject").value;
-  const comfort = document.querySelector('input[name="comfort"]:checked');
-  const understanding = document.querySelector('input[name="understanding"]:checked');
-
-  if(Date.now() < lockUntil){
-    showToast("⏳ ロック中です。タイマーが終わるまでお待ちください");
-    return;
-  }
-  if(!room){showToast("⚠️ 教室を選択してください"); return;}
-  if(!subject){showToast("⚠️科目を選択してください"); return;}
-  if(selectedX === null || selectedY === null){showToast(" ⚠️座席位置をタップしてください"); return;}
-  if(!comfort){showToast("⚠️ 快適度を選択してください"); return;}
-  if(!understanding){showToast("⚠️ 理解度を選択してください"); return;}
-
-  // 1端末1回制限：Firebase使用時は既存投票を画面側で制限。ローカルも同様。
-  const already = reports.find(r=>r.room===room && r.subject===subject && r.userId===userId);
-  if(already){
-    showToast("⚠️ この端末ではこの教室に投票済みです。リセット後に再投票できます");
-    return;
-  }
-
-  const report = {
-    id: makeId(),
-    room,
-    subject,
-    x:selectedX,
-    y:selectedY,
-    comfort:comfort.value,
-    understanding:understanding.value,
-    userId,
-    createdAt:Date.now()
-  };
-
-  // 画面表示用にブラウザ内にも保存
-  reports.push(report);
-  redrawAll();
-
-  // Googleスプレッドシートへ保存
-  await saveToGoogleSheet({
-    type: "comfort_report",
-    createdAt: new Date(report.createdAt).toLocaleString("ja-JP"),
-    subject: report.subject,
-    room: report.room,
-    x: Math.round(report.x),
-    y: Math.round(report.y),
-    comfort: comfortText(report.comfort),
-    understanding: understandingText(report.understanding),
-    userId: report.userId
-  });
-
-  lockUntil = Date.now() + 5*60*1000;
-  localStorage.setItem("comfortLockUntil", String(lockUntil));
-  startTimer();
-  showToast("✅ 送信しました");
-};
-
-window.submitVent = async function(){
-  const subject = document.getElementById("studentSubject").value;
-
-  if(!currentRoom){showToast("⚠️ 教室を選択してください"); return;}
-  if(!subject){showToast("⚠️科目を選択してください"); return;}
-  const vent = {id:makeId(), room:currentRoom, text:"🪟 換気希望", createdAt:Date.now()};
-  vents.push(vent);
-
-  await saveToGoogleSheet({
-    type: "vent",
-    createdAt: new Date(vent.createdAt).toLocaleString("ja-JP"),
-    subject: vent.subject,
-    room: vent.room,
-    x: "",
-    y: "",
-    comfort: "換気希望",
-    understanding: "",
-    userId: userId
-  });
-
-  showToast("🪟 換気希望を送信しました");
-};
-
-// ===== TIMER =====
-function startTimerIfNeeded(){
-  if(Date.now() < lockUntil) startTimer();
-}
-function startTimer(){
-  const banner = document.getElementById("timerBanner");
-  const display = document.getElementById("timerDisplay");
-  banner.classList.add("visible");
-  if(timerInterval) clearInterval(timerInterval);
-  timerInterval = setInterval(()=>{
-    const remaining = lockUntil - Date.now();
-    if(remaining <= 0){
-      clearInterval(timerInterval);
-      banner.classList.remove("visible");
-      localStorage.removeItem("comfortLockUntil");
-      showToast("✅ 再送信できるようになりました");
-      return;
-    }
-    const m = Math.floor(remaining/60000);
-    const s = Math.floor((remaining%60000)/1000);
-    display.textContent = `${m}:${String(s).padStart(2,"0")}`;
-  },1000);
-}
-
-// ===== DRAW =====
-function redrawAll(){
-  drawHeatmap("teacherRoomMapCanvas");
-  drawHeatmap("studentRoomMapCanvas");
-  drawCounts("teacherRoomMap");
-  drawCounts("studentRoomMap");
-  drawStudentMarker();
-  updateGraph();
-}
-
-function drawHeatmap(canvasId){
-  const canvas = document.getElementById(canvasId);
-  if(!canvas) return;
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0,0,760,420);
-
-  reports.forEach(p=>{
-    if(p.room !== currentRoom) return;
-    const grad = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,100);
-    if(p.comfort === "hot") grad.addColorStop(0,"rgba(239,68,68,0.58)");
-    if(p.comfort === "ok") grad.addColorStop(0,"rgba(34,197,94,0.55)");
-    if(p.comfort === "cold") grad.addColorStop(0,"rgba(56,189,248,0.58)");
-    if(p.comfort === "sound") grad.addColorStop(0,"rgba(245,158,11,0.58)");
-    if(p.comfort === "slide") grad.addColorStop(0,"rgba(168,85,247,0.58)");
-    grad.addColorStop(1,"rgba(0,0,0,0)");
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(p.x,p.y,100,0,Math.PI*2);
-    ctx.fill();
-  });
-}
-
-function drawCounts(roomId){
-  const room = document.getElementById(roomId);
-  if(!room) return;
-  room.querySelectorAll(".countBubble").forEach(e=>e.remove());
-  const grouped = {};
-  reports.forEach(p=>{
-    if(p.room !== currentRoom) return;
-    const gx = Math.round(p.x/60);
-    const gy = Math.round(p.y/60);
-    const key = gx+"-"+gy;
-    if(!grouped[key]) grouped[key] = {x:gx*60, y:gy*60, count:0};
-    grouped[key].count++;
-  });
-  Object.values(grouped).forEach(g=>{
-    const bubble = document.createElement("div");
-    bubble.className="countBubble";
-    bubble.textContent=g.count+"人";
-    bubble.style.left=(g.x/760*100)+"%";
-    bubble.style.top=(g.y/420*100)+"%";
-    room.appendChild(bubble);
-  });
-}
-
-function updateGraph(){
-  const roomReports = reports.filter(r=>r.room===currentRoom);
-  const good = roomReports.filter(r=>r.understanding==="good").length;
-  const bad = roomReports.filter(r=>r.understanding==="bad").length;
-  const max = Math.max(good,bad,1);
-  const maxH = 150;
-  document.getElementById("goodBar").style.height = `${Math.max(20, good/max*maxH)}px`;
-  document.getElementById("badBar").style.height = `${Math.max(20, bad/max*maxH)}px`;
-  document.getElementById("goodBar").textContent = good;
-  document.getElementById("badBar").textContent = bad;
-  document.getElementById("goodCount").textContent = good;
-  document.getElementById("badCount").textContent = bad;
-}
-
-
-window.resetHeatmap = async function(){
-  if(!confirm("この画面上のローカルデータをリセットしますか？\nスプレッドシート上の過去データは削除されません。")) return;
-  reports = reports.filter(r=>r.room !== currentRoom);
-  replies = replies.filter(r=>r.room !== currentRoom);
-  selectedX = null;
-  selectedY = null;
-  lockUntil = 0;
-  localStorage.removeItem("comfortLockUntil");
-  if(timerInterval) clearInterval(timerInterval);
-  document.getElementById("timerBanner").classList.remove("visible");
-  createRoom("studentRoomMap");
-  createRoom("teacherRoomMap");
-  redrawAll();
-  showToast("🔄 リセットしました");
-};
-
-// ===== UTIL =====
-function showToast(message){
-  const toast = document.getElementById("toast");
-  toast.textContent = message;
-  toast.classList.add("show");
-  setTimeout(()=>toast.classList.remove("show"),3200);
-}
-function makeId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
-function formatTime(t){
-  const d = new Date(t);
-  return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
-}
-function comfortText(v){
-  if(v==="hot") return "暑い";
-  if(v==="ok") return "快適";
-  if(v==="cold") return "寒い";
-  if(v==="sound") return "音が聞こえにくい";
-  if(v==="slide") return "スライドが見えにくい";
-  return v;
-}
-
-function understandingText(v){
-  if(v==="good") return "分かった";
-  if(v==="little") return "少し分かった";
-  if(v==="bad") return "分からない";
-  return v;
-}
-
-function escapeHtml(text){
-  return String(text)
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
-
-// 初期化
-createRoom("studentRoomMap");
-createRoom("teacherRoomMap");
-startTimerIfNeeded();
-</script>
-
+<script type="module" src="script.js"></script>
 </body>
 </html>
