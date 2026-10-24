@@ -661,6 +661,27 @@ function showToast(message){
 }
 
 
+// ===== スプレッドシート記録（Google Apps Script） =====
+// ↓ ここをあなたのWebアプリURL（https://script.google.com/macros/s/…/exec）に書き換える
+const KB_GAS_URL = "https://script.google.com/macros/s/AKfycbwrZg-HyfQQhBDK1bJhxx8Ej40H5qVWJde5SASTukNsiVmqzdyDWCL1xO|I…";
+
+function kbLogToSheet(payload){
+  if(!KB_GAS_URL || KB_GAS_URL.startsWith("ここに")){
+    return;
+  }
+
+  // GASはCORSの都合で no-cors + text/plain で送る（結果は読めないが記録はされる）
+  fetch(KB_GAS_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  }).catch(function(error){
+    console.error("スプレッドシート記録エラー", error);
+  });
+}
+
+
 // ===== 電動キックボード予約 =====
 const KB_PORTS = {
   "正門前":   ["KB-01", "KB-02", "KB-03"],
@@ -943,6 +964,17 @@ window.kbReserve = async function(){
       });
     });
 
+    // 予約成功後にスプレッドシートへ記録
+    kbLogToSheet({
+      type: "kickboard",
+      date: date,
+      port: port,
+      vehicle: vehicle,
+      slots: slots,
+      name: name,
+      userId: userId
+    });
+
     kbSelected = { vehicle: null, slots: [] };
     showToast("✅ 予約しました");
   }catch(error){
@@ -969,6 +1001,18 @@ window.kbCancel = async function(id){
 
   try{
     await deleteDoc(doc(db, "kickboardReservations", id));
+
+    // 取消もスプレッドシートに記録
+    kbLogToSheet({
+      type: "kickboard_cancel",
+      date: target.date,
+      port: target.port,
+      vehicle: target.vehicle,
+      slots: [target.hour],
+      name: target.name,
+      userId: target.userId
+    });
+
     showToast("🗑️ 予約を取り消しました");
   }catch(error){
     console.error(error);
