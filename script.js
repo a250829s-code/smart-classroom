@@ -663,7 +663,7 @@ function showToast(message){
 
 // ===== スプレッドシート記録（Google Apps Script） =====
 // ↓ ここをあなたのWebアプリURL（https://script.google.com/macros/s/…/exec）に書き換える
-const KB_GAS_URL = "https://script.google.com/macros/s/AKfycbwrZg-HyfQQhBDK1bJhxx8Ej40H5qVWJde5SASTukNsiVmqzdyDWCL1xO|I…";
+const KB_GAS_URL = "https://script.google.com/macros/s/AKfycbwrZg-HyfQQhBDK1bJhxx8Ej40H5qVWJde5SASTukNsiVmqzdyDwCL1xOllJkD771hRUA/exec";
 
 function kbLogToSheet(payload){
   if(!KB_GAS_URL || KB_GAS_URL.startsWith("ここに")){
