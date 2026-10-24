@@ -737,6 +737,127 @@ textarea:focus{
   margin-bottom:8px;
 }
 
+/* ===== KICKBOARD ===== */
+.kb-input{
+  padding:10px 16px;
+  border-radius:10px;
+  border:1.5px solid var(--border);
+  background:var(--surface);
+  color:var(--text);
+  outline:none;
+  font-size:14px;
+}
+
+.kb-input:focus{
+  border-color:var(--primary);
+}
+
+.kb-name{
+  width:100%;
+}
+
+.kb-grid-wrap{
+  overflow-x:auto;
+}
+
+.kb-table{
+  border-collapse:separate;
+  border-spacing:4px;
+  margin:0 auto;
+  font-size:12px;
+}
+
+.kb-table th{
+  color:var(--text-muted);
+  font-weight:700;
+  padding:4px 2px;
+  white-space:nowrap;
+}
+
+.kb-cell{
+  min-width:62px;
+  height:38px;
+  border-radius:8px;
+  border:1.5px solid var(--border);
+  background:white;
+  font-size:12px;
+  font-weight:700;
+  color:var(--text-muted);
+  text-align:center;
+  cursor:pointer;
+  transition:all .12s;
+}
+
+.kb-cell.free:hover{
+  border-color:var(--primary);
+  background:var(--primary-light);
+}
+
+.kb-cell.selected{
+  background:var(--primary);
+  border-color:var(--primary);
+  color:white;
+}
+
+.kb-cell.mine{
+  background:var(--comfort);
+  border-color:var(--comfort);
+  color:white;
+}
+
+.kb-cell.taken{
+  background:#e2e8f0;
+  border-color:#cbd5e1;
+  color:#94a3b8;
+  cursor:not-allowed;
+}
+
+.kb-cell.past{
+  background:#f8fafc;
+  color:#cbd5e1;
+  cursor:not-allowed;
+}
+
+.kb-dot-free{ background:white; border:1.5px solid var(--border); }
+.kb-dot-sel{ background:var(--primary); }
+.kb-dot-mine{ background:var(--comfort); }
+.kb-dot-taken{ background:#cbd5e1; }
+
+.kb-summary{
+  background:var(--primary-light);
+  border-radius:10px;
+  padding:12px 14px;
+  font-size:14px;
+  line-height:1.6;
+}
+
+.kb-notice{
+  margin-top:14px;
+  padding:12px 14px;
+  background:#fffbeb;
+  border:1.5px solid #fbbf24;
+  border-radius:10px;
+  font-size:12px;
+  line-height:1.7;
+  color:#92400e;
+}
+
+.kb-cancel-btn{
+  margin-top:8px;
+  padding:6px 12px;
+  border:1.5px solid var(--hot);
+  background:var(--hot-light);
+  color:var(--hot);
+  border-radius:8px;
+  font-size:12px;
+  font-weight:700;
+}
+
+.kb-cancel-btn:hover{
+  background:var(--hot);
+  color:white;
+}
+
 /* ===== TOAST ===== */
 .toast{
   position:fixed;

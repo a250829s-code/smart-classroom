@@ -33,6 +33,14 @@
       <span class="card-arrow">›</span>
     </div>
 
+    <div class="system-card" onclick="openKickboard()">
+      <div>
+        <div class="card-name">🛴 電動キックボード予約</div>
+        <div class="card-desc">キャンパス内ポートの貸出を予約</div>
+      </div>
+      <span class="card-arrow">›</span>
+    </div>
+
     <div class="system-card" onclick="openSlido()">
       <div>
         <div class="card-name">💬 匿名コメントフォーム</div>
@@ -220,6 +228,67 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <button class="bottom-back-btn" onclick="goTop()">← システム一覧へ戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== KICKBOARD ===== -->
+<div id="kickboardPage" class="screen">
+  <div class="inner-header">
+    <div class="inner-header-title">🛴 電動キックボード予約</div>
+  </div>
+
+  <div class="inner-body">
+    <div class="two-col">
+      <div class="card">
+        <h3>🗓️ ポート・日付・時間帯</h3>
+
+        <div class="room-select-row">
+          <label>ポート</label>
+          <select id="kbPort" onchange="kbChangeFilter()"></select>
+        </div>
+
+        <div class="room-select-row">
+          <label>日付</label>
+          <input type="date" id="kbDate" class="kb-input" onchange="kbChangeFilter()">
+        </div>
+
+        <div class="small">空き枠(白)をタップして選択。同じ車両の枠を最大4枠まで</div>
+        <br>
+        <div class="kb-grid-wrap" id="kbGrid"></div>
+
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot kb-dot-free"></div>空き</div>
+          <div class="legend-item"><div class="legend-dot kb-dot-sel"></div>選択中</div>
+          <div class="legend-item"><div class="legend-dot kb-dot-mine"></div>自分の予約</div>
+          <div class="legend-item"><div class="legend-dot kb-dot-taken"></div>予約済み</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📝 予約内容</h3>
+        <div class="kb-summary" id="kbSummary">枠を選択してください</div>
+
+        <div class="section-label">お名前(ニックネーム可)</div>
+        <input type="text" id="kbName" class="kb-input kb-name" maxlength="20" placeholder="例：山田">
+
+        <button class="submit-btn" onclick="kbReserve()">予約する</button>
+
+        <div class="kb-notice">
+          ⚠️ 利用前の確認<br>
+          ・16歳以上のみ利用可<br>
+          ・ヘルメットを着用してください<br>
+          ・歩道・構内の走行ルールを守ってください<br>
+          ・飲酒時は絶対に乗らないでください
+        </div>
+
+        <div class="section-label">📋 自分の予約</div>
+        <div class="comment-list" id="kbMyList"></div>
       </div>
     </div>
 

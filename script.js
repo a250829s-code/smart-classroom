@@ -9,7 +9,10 @@ import {
   query,
   where,
   orderBy,
-  onSnapshot
+  onSnapshot,
+  doc,
+  deleteDoc,
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 
@@ -658,8 +661,360 @@ function showToast(message){
 }
 
 
+// ===== 電動キックボード予約 =====
+const KB_PORTS = {
+  "正門前":   ["KB-01", "KB-02", "KB-03"],
+  "図書館前": ["KB-04", "KB-05", "KB-06"],
+  "3号館前":  ["KB-07", "KB-08"]
+};
+
+const KB_START_HOUR = 9;   // 9:00〜
+const KB_END_HOUR = 18;    // 〜18:00
+const KB_MAX_SLOTS = 4;    // 1回の予約で取れる最大枠数
+
+let kbReservations = [];
+let kbSelected = { vehicle: null, slots: [] };
+let unsubscribeKb = null;
+
+function kbSlotLabel(hour){
+  const h = String(hour).padStart(2, "0");
+  return `${h}:00`;
+}
+
+function kbToday(){
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
+}
+
+function kbInit(){
+  const portSelect = document.getElementById("kbPort");
+
+  portSelect.innerHTML = Object.keys(KB_PORTS).map(port => {
+    return `<option value="${port}">${port}</option>`;
+  }).join("");
+
+  const dateInput = document.getElementById("kbDate");
+  dateInput.value = kbToday();
+  dateInput.min = kbToday();
+
+  const saved = localStorage.getItem("kbName");
+  if(saved){
+    document.getElementById("kbName").value = saved;
+  }
+}
+
+window.openKickboard = function(){
+  showScreen("kickboardPage");
+  kbRender();
+};
+
+window.kbChangeFilter = function(){
+  kbSelected = { vehicle: null, slots: [] };
+  kbRender();
+};
+
+function kbDocId(date, vehicle, hour){
+  return `${SESSION_ID}_${date}_${vehicle}_${hour}`;
+}
+
+function kbIsPast(date, hour){
+  const today = kbToday();
+
+  if(date < today){
+    return true;
+  }
+
+  if(date === today){
+    return hour + 1 <= new Date().getHours();
+  }
+
+  return false;
+}
+
+function kbRender(){
+  const port = document.getElementById("kbPort").value;
+  const date = document.getElementById("kbDate").value;
+  const grid = document.getElementById("kbGrid");
+
+  if(!port || !date){
+    grid.innerHTML = "";
+    return;
+  }
+
+  const vehicles = KB_PORTS[port];
+  const hours = [];
+
+  for(let h = KB_START_HOUR; h < KB_END_HOUR; h++){
+    hours.push(h);
+  }
+
+  const reserved = {};
+
+  kbReservations.forEach(r => {
+    if(r.port === port && r.date === date){
+      reserved[r.vehicle + "|" + r.hour] = r;
+    }
+  });
+
+  let html = `<table class="kb-table"><thead><tr><th></th>`;
+
+  hours.forEach(h => {
+    html += `<th>${kbSlotLabel(h)}</th>`;
+  });
+
+  html += `</tr></thead><tbody>`;
+
+  vehicles.forEach(vehicle => {
+    html += `<tr><th>🛴 ${vehicle}</th>`;
+
+    hours.forEach(h => {
+      const r = reserved[vehicle + "|" + h];
+      const isSelected = kbSelected.vehicle === vehicle && kbSelected.slots.includes(h);
+
+      let cls = "free";
+      let text = "空き";
+
+      if(r){
+        if(r.userId === userId){
+          cls = "mine";
+          text = "予約中";
+        }else{
+          cls = "taken";
+          text = "×";
+        }
+      }else if(kbIsPast(date, h)){
+        cls = "past";
+        text = "－";
+      }else if(isSelected){
+        cls = "selected";
+        text = "選択";
+      }
+
+      html += `<td><button class="kb-cell ${cls}" onclick="kbCellClick('${vehicle}', ${h})">${text}</button></td>`;
+    });
+
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table>`;
+
+  grid.innerHTML = html;
+
+  kbRenderSummary();
+  kbRenderMyList();
+}
+
+window.kbCellClick = function(vehicle, hour){
+  const port = document.getElementById("kbPort").value;
+  const date = document.getElementById("kbDate").value;
+
+  const existing = kbReservations.find(r => {
+    return r.port === port && r.date === date && r.vehicle === vehicle && r.hour === hour;
+  });
+
+  if(existing){
+    if(existing.userId === userId){
+      kbCancel(existing.id);
+    }else{
+      showToast("⚠️ この枠は予約済みです");
+    }
+    return;
+  }
+
+  if(kbIsPast(date, hour)){
+    showToast("⚠️ 過ぎた時間帯は予約できません");
+    return;
+  }
+
+  // 別の車両を押したら選択をリセット
+  if(kbSelected.vehicle !== vehicle){
+    kbSelected = { vehicle: vehicle, slots: [] };
+  }
+
+  const idx = kbSelected.slots.indexOf(hour);
+
+  if(idx >= 0){
+    kbSelected.slots.splice(idx, 1);
+  }else{
+    if(kbSelected.slots.length >= KB_MAX_SLOTS){
+      showToast(`⚠️ 1回の予約は最大${KB_MAX_SLOTS}枠までです`);
+      return;
+    }
+    kbSelected.slots.push(hour);
+  }
+
+  kbSelected.slots.sort((a, b) => a - b);
+
+  if(kbSelected.slots.length === 0){
+    kbSelected.vehicle = null;
+  }
+
+  kbRender();
+};
+
+function kbRenderSummary(){
+  const box = document.getElementById("kbSummary");
+  const port = document.getElementById("kbPort").value;
+  const date = document.getElementById("kbDate").value;
+
+  if(!kbSelected.vehicle || kbSelected.slots.length === 0){
+    box.textContent = "枠を選択してください";
+    return;
+  }
+
+  const times = kbSelected.slots.map(h => `${kbSlotLabel(h)}〜${kbSlotLabel(h + 1)}`).join(" / ");
+
+  box.innerHTML = `
+    📍 ${port}<br>
+    🗓️ ${date}<br>
+    🛴 ${kbSelected.vehicle}<br>
+    ⏰ ${times}
+  `;
+}
+
+function kbRenderMyList(){
+  const list = document.getElementById("kbMyList");
+
+  const mine = kbReservations
+    .filter(r => r.userId === userId && !kbIsPast(r.date, r.hour))
+    .sort((a, b) => (a.date + String(a.hour).padStart(2, "0")).localeCompare(b.date + String(b.hour).padStart(2, "0")));
+
+  if(mine.length === 0){
+    list.innerHTML = `<div class="comment-empty">予約はありません</div>`;
+    return;
+  }
+
+  list.innerHTML = mine.map(r => `
+    <div class="comment-item">
+      <strong>${r.date}　${kbSlotLabel(r.hour)}〜${kbSlotLabel(r.hour + 1)}</strong><br>
+      ${r.port} ／ 🛴 ${r.vehicle}
+      <div class="comment-meta">${r.name}</div>
+      <button class="kb-cancel-btn" onclick="kbCancel('${r.id}')">取り消す</button>
+    </div>
+  `).join("");
+}
+
+window.kbReserve = async function(){
+  const port = document.getElementById("kbPort").value;
+  const date = document.getElementById("kbDate").value;
+  const name = document.getElementById("kbName").value.trim();
+
+  if(!kbSelected.vehicle || kbSelected.slots.length === 0){
+    showToast("⚠️ 予約する枠を選択してください");
+    return;
+  }
+
+  if(!name){
+    showToast("⚠️ お名前を入力してください");
+    return;
+  }
+
+  localStorage.setItem("kbName", name);
+
+  const vehicle = kbSelected.vehicle;
+  const slots = [...kbSelected.slots];
+
+  try{
+    // 二重予約防止：取得→存在チェック→書き込みを1つのトランザクションで行う
+    await runTransaction(db, async function(tx){
+      const refs = slots.map(h => doc(db, "kickboardReservations", kbDocId(date, vehicle, h)));
+      const snaps = [];
+
+      for(const ref of refs){
+        snaps.push(await tx.get(ref));
+      }
+
+      if(snaps.some(s => s.exists())){
+        throw new Error("already-reserved");
+      }
+
+      refs.forEach((ref, i) => {
+        tx.set(ref, {
+          sessionId: SESSION_ID,
+          port: port,
+          date: date,
+          vehicle: vehicle,
+          hour: slots[i],
+          name: name,
+          userId: userId,
+          createdAt: serverTimestamp()
+        });
+      });
+    });
+
+    kbSelected = { vehicle: null, slots: [] };
+    showToast("✅ 予約しました");
+  }catch(error){
+    console.error(error);
+
+    if(error.message === "already-reserved"){
+      showToast("⚠️ 直前に他の人が予約しました。別の枠を選んでください");
+    }else{
+      showToast("⚠️ 予約に失敗しました。Firebase設定を確認してください");
+    }
+  }
+};
+
+window.kbCancel = async function(id){
+  const target = kbReservations.find(r => r.id === id);
+
+  if(!target || target.userId !== userId){
+    return;
+  }
+
+  if(!confirm(`${target.date} ${kbSlotLabel(target.hour)}〜 ${target.vehicle} の予約を取り消しますか？`)){
+    return;
+  }
+
+  try{
+    await deleteDoc(doc(db, "kickboardReservations", id));
+    showToast("🗑️ 予約を取り消しました");
+  }catch(error){
+    console.error(error);
+    showToast("⚠️ 取り消しに失敗しました");
+  }
+};
+
+function startKickboardListener(){
+  if(unsubscribeKb){
+    unsubscribeKb();
+  }
+
+  const kbQuery = query(
+    collection(db, "kickboardReservations"),
+    where("sessionId", "==", SESSION_ID)
+  );
+
+  unsubscribeKb = onSnapshot(kbQuery, function(snapshot){
+    kbReservations = [];
+
+    snapshot.forEach(function(d){
+      const data = d.data();
+
+      kbReservations.push({
+        id: d.id,
+        port: data.port,
+        date: data.date,
+        vehicle: data.vehicle,
+        hour: data.hour,
+        name: data.name,
+        userId: data.userId
+      });
+    });
+
+    kbRender();
+  }, function(error){
+    console.error(error);
+    showToast("⚠️ キックボード予約の読み込みに失敗しました");
+  });
+}
+
+
 // ===== 初期化 =====
 createRoom("studentRoomMap");
 createRoom("teacherRoomMap");
 startTimerIfNeeded();
 startFirestoreListener();
+kbInit();
+startKickboardListener();
