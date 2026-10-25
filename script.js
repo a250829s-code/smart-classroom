@@ -662,7 +662,7 @@ function showToast(message){
 
 
 // ===== スプレッドシート記録（Google Apps Script） =====
-// ↓ ここをあなたのWebアプリURL（https://script.google.com/macros/s/…/exec）に書き換える
+// ↓ あなたのWebアプリURL（https://script.google.com/macros/s/…/exec）に書き換える
 const KB_GAS_URL = "https://script.google.com/macros/s/AKfycbwrZg-HyfQQhBDK1bJhxx8Ej40H5qVWJde5SASTukNsiVmqzdyDwCL1xOllJkD771hRUA/exec";
 
 function kbLogToSheet(payload){
@@ -683,11 +683,9 @@ function kbLogToSheet(payload){
 
 
 // ===== 電動キックボード予約 =====
-const KB_PORTS = {
-  "正門前":   ["KB-01", "KB-02", "KB-03"],
-  "図書館前": ["KB-04", "KB-05", "KB-06"],
-  "3号館前":  ["KB-07", "KB-08"]
-};
+// 車両は全ポート共通の3台。同じ車両は、日付・時間が同じなら別ポートでも予約できない
+const KB_PORTS = ["正門前", "図書館前", "3号館前"];
+const KB_VEHICLES = ["KB-01", "KB-02", "KB-03"];
 
 const KB_START_HOUR = 9;   // 9:00〜
 const KB_END_HOUR = 18;    // 〜18:00
@@ -711,7 +709,7 @@ function kbToday(){
 function kbInit(){
   const portSelect = document.getElementById("kbPort");
 
-  portSelect.innerHTML = Object.keys(KB_PORTS).map(port => {
+  portSelect.innerHTML = KB_PORTS.map(port => {
     return `<option value="${port}">${port}</option>`;
   }).join("");
 
@@ -735,6 +733,7 @@ window.kbChangeFilter = function(){
   kbRender();
 };
 
+// ポートを含めない：車両は全ポート共通なので「日付＋車両＋時間」で一意
 function kbDocId(date, vehicle, hour){
   return `${SESSION_ID}_${date}_${vehicle}_${hour}`;
 }
@@ -763,17 +762,17 @@ function kbRender(){
     return;
   }
 
-  const vehicles = KB_PORTS[port];
   const hours = [];
 
   for(let h = KB_START_HOUR; h < KB_END_HOUR; h++){
     hours.push(h);
   }
 
+  // ポートに関係なく、その日の予約を「車両＋時間」で引く
   const reserved = {};
 
   kbReservations.forEach(r => {
-    if(r.port === port && r.date === date){
+    if(r.date === date){
       reserved[r.vehicle + "|" + r.hour] = r;
     }
   });
@@ -786,7 +785,7 @@ function kbRender(){
 
   html += `</tr></thead><tbody>`;
 
-  vehicles.forEach(vehicle => {
+  KB_VEHICLES.forEach(vehicle => {
     html += `<tr><th>🛴 ${vehicle}</th>`;
 
     hours.forEach(h => {
@@ -827,11 +826,11 @@ function kbRender(){
 }
 
 window.kbCellClick = function(vehicle, hour){
-  const port = document.getElementById("kbPort").value;
   const date = document.getElementById("kbDate").value;
 
+  // ポートに関係なく、同じ日付・車両・時間の予約を探す
   const existing = kbReservations.find(r => {
-    return r.port === port && r.date === date && r.vehicle === vehicle && r.hour === hour;
+    return r.date === date && r.vehicle === vehicle && r.hour === hour;
   });
 
   if(existing){
@@ -995,7 +994,7 @@ window.kbCancel = async function(id){
     return;
   }
 
-  if(!confirm(`${target.date} ${kbSlotLabel(target.hour)}〜 ${target.vehicle} の予約を取り消しますか？`)){
+  if(!confirm(`${target.date} ${kbSlotLabel(target.hour)}〜 ${target.port} ${target.vehicle} の予約を取り消しますか？`)){
     return;
   }
 
