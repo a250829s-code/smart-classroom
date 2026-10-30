@@ -227,6 +227,12 @@ select:focus{
   align-items:start;
 }
 
+/* グリッドの中身が広くても、カラムが横に広がらないようにする */
+.two-col > *,
+.three-col > *{
+  min-width:0;
+}
+
 @media(max-width:900px){
   .two-col,
   .three-col{
@@ -756,14 +762,18 @@ textarea:focus{
   width:100%;
 }
 
+/* 横スワイプで全時間帯を見られるエリア */
 .kb-grid-wrap{
   overflow-x:auto;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:8px;
 }
 
 .kb-table{
   border-collapse:separate;
   border-spacing:4px;
-  margin:0 auto;
+  margin:0;
   font-size:12px;
 }
 
@@ -774,13 +784,32 @@ textarea:focus{
   white-space:nowrap;
 }
 
+/* 車両名の列は、スワイプ中も左に固定 */
+.kb-table th.kb-veh{
+  position:sticky;
+  left:0;
+  z-index:2;
+  background:#ffffff;
+  padding-right:6px;
+  box-shadow:6px 0 6px -4px rgba(0,0,0,0.08);
+}
+
+.kb-table th.kb-hour{
+  text-align:left;
+  padding-left:6px;
+}
+
+.kb-table td.hb{
+  padding-left:8px;
+}
+
 .kb-cell{
   min-width:62px;
   height:38px;
   border-radius:8px;
   border:1.5px solid var(--border);
   background:white;
-  font-size:12px;
+  font-size:11px;
   font-weight:700;
   color:var(--text-muted);
   text-align:center;
@@ -818,10 +847,18 @@ textarea:focus{
   cursor:not-allowed;
 }
 
+.kb-cell.buffer{
+  background:#f1f5f9;
+  border:1.5px dashed #cbd5e1;
+  color:#94a3b8;
+  cursor:not-allowed;
+}
+
 .kb-dot-free{ background:white; border:1.5px solid var(--border); }
 .kb-dot-sel{ background:var(--primary); }
 .kb-dot-mine{ background:var(--comfort); }
 .kb-dot-taken{ background:#cbd5e1; }
+.kb-dot-buffer{ background:#f1f5f9; border:1.5px dashed #94a3b8; }
 
 .kb-summary{
   background:var(--primary-light);
@@ -855,6 +892,95 @@ textarea:focus{
 
 .kb-cancel-btn:hover{
   background:var(--hot);
+  color:white;
+}
+
+/* 完了ボタン（予約ボタンの下） */
+.kb-done-btn{
+  margin-top:10px;
+  background:#16a34a;
+}
+
+.kb-done-btn:hover{
+  background:#15803d;
+}
+
+.kb-hint{
+  margin-top:8px;
+}
+
+.kb-tokens{
+  margin-bottom:12px;
+  padding:12px 14px;
+  border-radius:10px;
+  background:#f0fdf4;
+  border:1.5px solid var(--comfort);
+  font-size:14px;
+  line-height:1.6;
+}
+
+.kb-tokens strong{
+  font-size:20px;
+}
+
+.kb-tokens.empty{
+  background:var(--hot-light);
+  border-color:var(--hot);
+  color:var(--hot);
+}
+
+.kb-tokens .small{
+  text-align:left;
+  margin-top:2px;
+}
+
+/* 自分の予約リスト */
+.kb-badge{
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:700;
+  margin-left:6px;
+}
+
+.kb-badge.using{
+  background:var(--primary-light);
+  color:var(--primary);
+}
+
+.kb-badge.done{
+  background:var(--comfort-light);
+  color:#15803d;
+}
+
+.kb-badge.warn{
+  background:#fffbeb;
+  color:#92400e;
+}
+
+.kb-item-actions{
+  display:flex;
+  gap:8px;
+  margin-top:8px;
+}
+
+.kb-item-actions .kb-cancel-btn{
+  margin-top:0;
+}
+
+.kb-complete-btn{
+  padding:6px 12px;
+  border:1.5px solid var(--comfort);
+  background:var(--comfort-light);
+  color:#15803d;
+  border-radius:8px;
+  font-size:12px;
+  font-weight:700;
+}
+
+.kb-complete-btn:hover{
+  background:var(--comfort);
   color:white;
 }
 

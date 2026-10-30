@@ -33,18 +33,18 @@
       <span class="card-arrow">›</span>
     </div>
 
-    <div class="system-card" onclick="openKickboard()">
-      <div>
-        <div class="card-name">🛴 電動キックボード予約</div>
-        <div class="card-desc">キャンパス内ポートの貸出を予約</div>
-      </div>
-      <span class="card-arrow">›</span>
-    </div>
-
     <div class="system-card" onclick="openSlido()">
       <div>
         <div class="card-name">💬 匿名コメントフォーム</div>
         <div class="card-desc">Slidoで匿名の質問・意見を送信</div>
+      </div>
+      <span class="card-arrow">›</span>
+    </div>
+
+    <div class="system-card" onclick="openKickboard()">
+      <div>
+        <div class="card-name">🛴 電動キックボード予約</div>
+        <div class="card-desc">キャンパス内ポートの貸出を予約</div>
       </div>
       <span class="card-arrow">›</span>
     </div>
@@ -258,7 +258,7 @@
           <input type="date" id="kbDate" class="kb-input" onchange="kbChangeFilter()">
         </div>
 
-          <div class="small">車両(KB-01〜03)は全ポート共通です。空き枠をタップして選択。同じ車両の枠を最大4枠まで</div>
+        <div class="small">車両(KB-01〜03)は全ポート共通です。1マス15分。<br>空き枠をタップして選択(連続した2マス以上は不可。1マス空けて選んでください)<br>左右にスワイプすると、見えていない時間帯も表示されます</div>
         <br>
         <div class="kb-grid-wrap" id="kbGrid"></div>
 
@@ -267,17 +267,23 @@
           <div class="legend-item"><div class="legend-dot kb-dot-sel"></div>選択中</div>
           <div class="legend-item"><div class="legend-dot kb-dot-mine"></div>自分の予約</div>
           <div class="legend-item"><div class="legend-dot kb-dot-taken"></div>予約済み</div>
+          <div class="legend-item"><div class="legend-dot kb-dot-buffer"></div>間隔(選択不可)</div>
         </div>
       </div>
 
       <div class="card">
         <h3>📝 予約内容</h3>
+
+        <div class="kb-tokens" id="kbTokens"></div>
+
         <div class="kb-summary" id="kbSummary">枠を選択してください</div>
 
         <div class="section-label">お名前(ニックネーム可)</div>
         <input type="text" id="kbName" class="kb-input kb-name" maxlength="20" placeholder="例：山田">
 
         <button class="submit-btn" onclick="kbReserve()">予約する</button>
+        <button class="submit-btn kb-done-btn" onclick="kbComplete()">完了</button>
+        <div class="small kb-hint">「完了」は、利用が終わったときに押してください(返却の記録)</div>
 
         <div class="kb-notice">
           ⚠️ 利用前の確認<br>
