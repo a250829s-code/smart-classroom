@@ -716,7 +716,7 @@ const KB_SLOT_MIN = 15;                       // 1マスの長さ（分）
 const KB_START_SLOT = 9 * 60 / KB_SLOT_MIN;   // 9:00 → 36
 const KB_END_SLOT = 18 * 60 / KB_SLOT_MIN;    // 18:00 → 72（この枠は含まない）
 const KB_MAX_SLOTS = 4;                       // 1回の予約で選べる最大マス数
-const KB_WEEKLY_TOKENS = 10;                  // 1週間のトークン数（予約1回＝1トークン）
+const KB_WEEKLY_TOKENS = 10;                  // 1週間のトークン数（1マス＝1トークン）
 
 // true：他の人の予約の前後1マスも空ける／false：自分の予約の前後だけ空ける
 const KB_GAP_APPLIES_TO_OTHERS = true;
@@ -816,7 +816,7 @@ function kbNextToSelected(vehicle, slot){
 }
 
 
-// ----- トークン（週10、月曜0:00に復活） -----
+// ----- トークン（週10、1マス＝1トークン、月曜0:00に復活） -----
 function kbWeekStart(){
   const d = new Date();
   const diff = (d.getDay() + 6) % 7;  // 月曜=0
@@ -830,8 +830,9 @@ function kbUsedTokens(){
   const end = new Date(start);
   end.setDate(end.getDate() + 7);
 
-  const ids = new Set();
+  let count = 0;
 
+  // 1マス＝1トークン
   kbReservations.forEach(r => {
     if(r.userId !== userId){
       return;
@@ -841,11 +842,11 @@ function kbUsedTokens(){
     const t = r.createdAtMs === null ? Date.now() : r.createdAtMs;
 
     if(t >= start.getTime() && t < end.getTime()){
-      ids.add(r.bookingId);
+      count++;
     }
   });
 
-  return ids.size;
+  return count;
 }
 
 function kbNextReset(){
@@ -868,7 +869,7 @@ function kbRenderTokens(){
 
   box.innerHTML = `
     🎫 今週のトークン <strong>${left}</strong> / ${KB_WEEKLY_TOKENS}
-    <div class="small">予約1回につき1トークン消費。次回復活：${kbNextReset()}</div>
+    <div class="small">1マス(15分)につき1トークン消費。次回復活：${kbNextReset()}</div>
   `;
 }
 
@@ -1075,6 +1076,12 @@ window.kbCellClick = function(vehicle, slot){
     return;
   }
 
+  // 残りトークンを超えて選べない（1マス＝1トークン）
+  if(base.length + 1 > KB_WEEKLY_TOKENS - kbUsedTokens()){
+    showToast(`⚠️ トークンが足りません（残り${Math.max(0, KB_WEEKLY_TOKENS - kbUsedTokens())}）。${kbNextReset()}に復活します`);
+    return;
+  }
+
   kbSelected = {
     vehicle: vehicle,
     slots: base.concat([slot]).sort((a, b) => a - b)
@@ -1100,7 +1107,7 @@ function kbRenderSummary(){
     🗓️ ${kbEsc(date)}<br>
     🛴 ${kbEsc(kbSelected.vehicle)}<br>
     ⏰ ${kbTimesText(kbSelected.slots)}（計${minutes}分）<br>
-    🎫 トークン1つ消費
+    🎫 トークン${kbSelected.slots.length}つ消費
   `;
 }
 
@@ -1171,9 +1178,10 @@ window.kbReserve = async function(){
   }
 
   const used = kbUsedTokens();
+  const need = kbSelected.slots.length;   // 1マス＝1トークン
 
-  if(used >= KB_WEEKLY_TOKENS){
-    showToast(`⚠️ 今週のトークンを使い切りました。${kbNextReset()}に復活します`);
+  if(used + need > KB_WEEKLY_TOKENS){
+    showToast(`⚠️ トークンが足りません（必要${need}／残り${Math.max(0, KB_WEEKLY_TOKENS - used)}）。${kbNextReset()}に復活します`);
     return;
   }
 
@@ -1248,7 +1256,7 @@ window.kbReserve = async function(){
     kbLogSlots("kickboard", date, port, vehicle, slots, name);
 
     kbSelected = { vehicle: null, slots: [] };
-    showToast(`✅ 予約しました（今週の残りトークン ${KB_WEEKLY_TOKENS - used - 1}）`);
+    showToast(`✅ 予約しました（今週の残りトークン ${KB_WEEKLY_TOKENS - used - need}）`);
   }catch(error){
     console.error(error);
 
