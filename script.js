@@ -717,6 +717,8 @@ const KB_START_SLOT = 9 * 60 / KB_SLOT_MIN;   // 9:00 → 36
 const KB_END_SLOT = 18 * 60 / KB_SLOT_MIN;    // 18:00 → 72（この枠は含まない）
 const KB_MAX_SLOTS = 4;                       // 1回の予約で選べる最大マス数
 const KB_WEEKLY_TOKENS = 10;                  // 1週間のトークン数（1マス＝1トークン）
+const KB_USER_MAX_DAYS = 2;                   // 一般利用者が予約できる先の日数（今日＋2日後まで）
+const KB_ADMIN_PASSWORD = "250829";           // 管理者パスワード（教員用と同じ）
 
 // true：他の人の予約の前後1マスも空ける／false：自分の予約の前後だけ空ける
 const KB_GAP_APPLIES_TO_OTHERS = true;
@@ -742,6 +744,89 @@ function kbToday(){
   return d.toISOString().slice(0, 10);
 }
 
+// 今日から n 日後の日付文字列（YYYY-MM-DD）
+function kbDateAfter(n){
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
+}
+
+
+// ----- 管理者モード -----
+function kbIsAdmin(){
+  return sessionStorage.getItem("kbAdmin") === "true";
+}
+
+function kbApplyDateLimit(){
+  const dateInput = document.getElementById("kbDate");
+
+  dateInput.min = kbToday();
+
+  if(kbIsAdmin()){
+    dateInput.removeAttribute("max");
+  }else{
+    const max = kbDateAfter(KB_USER_MAX_DAYS);
+
+    dateInput.max = max;
+
+    if(dateInput.value > max){
+      dateInput.value = max;
+    }
+  }
+}
+
+function kbRenderAdmin(){
+  const row = document.getElementById("kbAdminRow");
+
+  if(!row){
+    return;
+  }
+
+  if(kbIsAdmin()){
+    row.innerHTML = `
+      <span class="kb-admin-on">🔑 管理者モード（日付の制限なし）</span>
+      <button class="kb-admin-btn" onclick="kbAdminLogout()">解除</button>
+    `;
+  }else{
+    row.innerHTML = `<button class="kb-admin-btn" onclick="kbAdminLogin()">🔑 管理者</button>`;
+  }
+}
+
+window.kbAdminLogin = function(){
+  const password = prompt("管理者パスワードを入力してください");
+
+  if(password === null){
+    return;
+  }
+
+  if(password !== KB_ADMIN_PASSWORD){
+    alert("パスワードが違います");
+    return;
+  }
+
+  sessionStorage.setItem("kbAdmin", "true");
+
+  kbApplyDateLimit();
+  kbRenderAdmin();
+  kbRender();
+
+  showToast("🔑 管理者モードにしました");
+};
+
+window.kbAdminLogout = function(){
+  sessionStorage.removeItem("kbAdmin");
+
+  kbSelected = { vehicle: null, slots: [] };
+
+  kbApplyDateLimit();
+  kbRenderAdmin();
+  kbRender();
+
+  showToast("管理者モードを解除しました");
+};
+
+
 // "2026-10-31" とスロット番号 → Date
 function kbSlotToDate(date, slot){
   const p = date.split("-").map(Number);
@@ -759,9 +844,9 @@ function kbInit(){
     return `<option value="${port}">${port}</option>`;
   }).join("");
 
-  const dateInput = document.getElementById("kbDate");
-  dateInput.value = kbToday();
-  dateInput.min = kbToday();
+  document.getElementById("kbDate").value = kbToday();
+  kbApplyDateLimit();
+  kbRenderAdmin();
 
   const saved = localStorage.getItem("kbName");
   if(saved){
@@ -775,6 +860,7 @@ function kbInit(){
 window.openKickboard = function(){
   showScreen("kickboardPage");
   kbNeedScroll = true;
+  kbApplyDateLimit();
   kbRender();
 };
 
@@ -1046,6 +1132,11 @@ window.kbCellClick = function(vehicle, slot){
     return;
   }
 
+  if(!kbIsAdmin() && date > kbDateAfter(KB_USER_MAX_DAYS)){
+    showToast(`⚠️ 予約できるのは${KB_USER_MAX_DAYS}日後までです`);
+    return;
+  }
+
   // 別の車両を押したら、選択をその車両からやり直す
   const base = kbSelected.vehicle === vehicle ? kbSelected.slots : [];
 
@@ -1166,6 +1257,11 @@ window.kbReserve = async function(){
   const port = document.getElementById("kbPort").value;
   const date = document.getElementById("kbDate").value;
   const name = document.getElementById("kbName").value.trim();
+
+  if(!kbIsAdmin() && date > kbDateAfter(KB_USER_MAX_DAYS)){
+    showToast(`⚠️ 予約できるのは${KB_USER_MAX_DAYS}日後までです`);
+    return;
+  }
 
   if(!kbSelected.vehicle || kbSelected.slots.length === 0){
     showToast("⚠️ 予約する枠を選択してください");
