@@ -11,6 +11,7 @@ import {
   orderBy,
   onSnapshot,
   doc,
+  getDoc,
   deleteDoc,
   updateDoc,
   runTransaction
@@ -716,6 +717,7 @@ const KB_SLOT_MIN = 15;                       // 1マスの長さ（分）
 const KB_START_SLOT = 9 * 60 / KB_SLOT_MIN;   // 9:00 → 36
 const KB_END_SLOT = 18 * 60 / KB_SLOT_MIN;    // 18:00 → 72（この枠は含まない）
 const KB_MAX_SLOTS = 4;                       // 1回の予約で選べる最大マス数
+const KB_MAX_CONSECUTIVE_SLOTS = 2;            // 連続予約は最大2コマ
 const KB_WEEKLY_TOKENS = 10;                  // 1週間のトークン数（1マス＝1トークン）
 const KB_USER_MAX_DAYS = 2;                   // 一般利用者が予約できる先の日数（今日＋2日後まで）
 const KB_ADMIN_PASSWORD = "250829";           // 管理者パスワード（教員用と同じ）
@@ -727,6 +729,7 @@ let kbReservations = [];
 let kbSelected = { vehicle: null, slots: [] };
 let kbNeedScroll = false;
 let unsubscribeKb = null;
+let kbCancellationUsage = null;
 
 function kbPad(n){
   return String(n).padStart(2, "0");
@@ -911,6 +914,41 @@ function kbWeekStart(){
   return d;
 }
 
+function kbWeekKey(date = new Date()){
+  const d = new Date(date);
+  const diff = (d.getDay() + 6) % 7;
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - diff);
+  return `${d.getFullYear()}-${kbPad(d.getMonth() + 1)}-${kbPad(d.getDate())}`;
+}
+
+function kbCancellationDocId(weekKey){
+  return `cancelusage_${SESSION_ID}_${encodeURIComponent(userId)}_${weekKey}`;
+}
+
+function kbConsecutiveRunTooLong(slots){
+  const sorted = slots.slice().sort((a, b) => a - b);
+  let run = 1;
+  for(let i = 1; i < sorted.length; i++){
+    run = sorted[i] === sorted[i - 1] + 1 ? run + 1 : 1;
+    if(run > KB_MAX_CONSECUTIVE_SLOTS) return true;
+  }
+  return false;
+}
+
+async function kbLoadCancellationUsage(){
+  try{
+    const weekKey = kbWeekKey();
+    const snap = await getDoc(doc(db, "kickboardReservations", kbCancellationDocId(weekKey)));
+    kbCancellationUsage = snap.exists()
+      ? { weekKey, ...snap.data() }
+      : { weekKey, cancellationCount: 0, retainedTokens: 0, penaltyTokens: 0 };
+    kbRenderTokens();
+  }catch(error){
+    console.error("キャンセル履歴の読み込みに失敗しました", error);
+  }
+}
+
 function kbUsedTokens(){
   const start = kbWeekStart();
   const end = new Date(start);
@@ -920,18 +958,15 @@ function kbUsedTokens(){
 
   // 1マス＝1トークン
   kbReservations.forEach(r => {
-    if(r.userId !== userId){
-      return;
-    }
-
-    // 書き込み直後でサーバー時刻が未確定のときは「今」とみなす
+    if(r.userId !== userId) return;
     const t = r.createdAtMs === null ? Date.now() : r.createdAtMs;
-
-    if(t >= start.getTime() && t < end.getTime()){
-      count++;
-    }
+    if(t >= start.getTime() && t < end.getTime()) count++;
   });
 
+  if(kbCancellationUsage && kbCancellationUsage.weekKey === kbWeekKey(start)){
+    count += Number(kbCancellationUsage.retainedTokens || 0)
+           + Number(kbCancellationUsage.penaltyTokens || 0);
+  }
   return count;
 }
 
@@ -955,7 +990,8 @@ function kbRenderTokens(){
 
   box.innerHTML = `
     🎫 今週のトークン <strong>${left}</strong> / ${KB_WEEKLY_TOKENS}
-    <div class="small">1マス(15分)につき1トークン消費。次回復活：${kbNextReset()}</div>
+    <div class="small">1マス(15分)につき1トークン消費。次回復：${kbNextReset()}</div>
+    <div class="small">キャンセル：週1回目は開始30分前までなら返却。30分以内は返却なし・違約金なし。2回目以降は返却なし、30分以内は予約コマ数分の違約金。</div>
   `;
 }
 
@@ -1157,8 +1193,9 @@ window.kbCellClick = function(vehicle, slot){
     return;
   }
 
-  if(base.some(s => Math.abs(s - slot) === 1)){
-    showToast("⚠️ 連続した2マス以上は予約できません。1マス空けて選んでください");
+  const proposedSlots = base.concat([slot]).sort((a, b) => a - b);
+  if(kbConsecutiveRunTooLong(proposedSlots)){
+    showToast("⚠️ 連続予約は最大2コマまでです");
     return;
   }
 
@@ -1175,7 +1212,7 @@ window.kbCellClick = function(vehicle, slot){
 
   kbSelected = {
     vehicle: vehicle,
-    slots: base.concat([slot]).sort((a, b) => a - b)
+    slots: proposedSlots
   };
 
   kbRender();
@@ -1287,12 +1324,10 @@ window.kbReserve = async function(){
   const slots = kbSelected.slots.slice();
   const bookingId = "b" + Date.now() + Math.random().toString(36).slice(2, 7);
 
-  // 念のため、送信直前にも「連続」になっていないか確認
-  for(let i = 1; i < slots.length; i++){
-    if(slots[i] - slots[i - 1] < 2){
-      showToast("⚠️ 連続した2マス以上は予約できません");
-      return;
-    }
+  // 念のため、送信直前にも3コマ以上の連続がないか確認
+  if(kbConsecutiveRunTooLong(slots)){
+    showToast("⚠️ 連続予約は最大2コマまでです");
+    return;
   }
 
   try{
@@ -1370,39 +1405,87 @@ window.kbReserve = async function(){
 // ----- 取り消し -----
 window.kbCancelBooking = async function(bookingId){
   const b = kbMyBookings().find(x => x.id === bookingId);
-
-  if(!b){
-    return;
-  }
-
+  if(!b) return;
   if(b.completed){
     showToast("⚠️ 完了済みの予約は取り消せません");
     return;
   }
-
   if(kbSlotToDate(b.date, b.end).getTime() <= Date.now()){
     showToast("⚠️ 終了した予約は取り消せません");
     return;
   }
 
-  if(!confirm(`${b.date}\n${kbTimesText(b.slots)}\n${b.port} ${b.vehicle} の予約を取り消しますか？\n（今週消費したトークンは戻ります）`)){
+  await kbLoadCancellationUsage();
+  const now = Date.now();
+  const isLate = now > kbSlotToDate(b.date, b.start).getTime() - 30 * 60 * 1000;
+  const weekKey = kbWeekKey();
+  const ledgerRef = doc(db, "kickboardReservations", kbCancellationDocId(weekKey));
+  const slotCount = b.slots.length;
+  const expectedFirst = !kbCancellationUsage || Number(kbCancellationUsage.cancellationCount || 0) === 0;
+  const expectedRefund = expectedFirst && !isLate;
+  const expectedPenalty = !expectedFirst && isLate ? slotCount : 0;
+  const detail = expectedRefund
+    ? `今週1回目のキャンセルのため${slotCount}トークン返却されます。`
+    : expectedFirst
+      ? "今週1回目の無料キャンセルです。トークン返却・違約金はありません。"
+      : `トークン返却はありません。${expectedPenalty ? `違約金として${expectedPenalty}トークンを消費します。` : ""}`;
+
+  if(!confirm(`${b.date}\n${kbTimesText(b.slots)}\n${b.port} ${b.vehicle} の予約を取り消しますか？\n\n${detail}`)){
     return;
   }
 
+  let cancelCount = 0;
+  let refundTokens = 0;
+  let penaltyTokens = 0;
+
   try{
-    await Promise.all(b.docIds.map(id => {
-      return deleteDoc(doc(db, "kickboardReservations", id));
-    }));
+    await runTransaction(db, async function(tx){
+      const bookingRefs = b.docIds.map(id => doc(db, "kickboardReservations", id));
+      const bookingSnaps = [];
+      for(const ref of bookingRefs) bookingSnaps.push(await tx.get(ref));
+      const ledgerSnap = await tx.get(ledgerRef);
+      const ledger = ledgerSnap.exists() ? ledgerSnap.data() : {
+        cancellationCount: 0, retainedTokens: 0, penaltyTokens: 0
+      };
+
+      cancelCount = Number(ledger.cancellationCount || 0) + 1;
+      const isWeeklyFreeCancellation = cancelCount === 1;
+      refundTokens = isWeeklyFreeCancellation && !isLate ? slotCount : 0;
+      penaltyTokens = !isWeeklyFreeCancellation && isLate ? slotCount : 0;
+
+      bookingRefs.forEach((ref, i) => {
+        if(bookingSnaps[i].exists()) tx.delete(ref);
+      });
+
+      tx.set(ledgerRef, {
+        sessionId: SESSION_ID,
+        recordType: "weeklyCancellationUsage",
+        userId: userId,
+        weekKey: weekKey,
+        cancellationCount: cancelCount,
+        retainedTokens: Number(ledger.retainedTokens || 0) + (refundTokens ? 0 : slotCount),
+        penaltyTokens: Number(ledger.penaltyTokens || 0) + penaltyTokens,
+        updatedAt: serverTimestamp()
+      });
+    });
 
     kbLogSlots("kickboard_cancel", b.date, b.port, b.vehicle, b.slots, b.name);
+    await kbLoadCancellationUsage();
 
-    showToast("🗑️ 予約を取り消しました");
+    if(cancelCount === 1 && refundTokens > 0){
+      showToast(`🗑️ 予約を取り消しました（${refundTokens}トークン返却）`);
+    }else if(cancelCount === 1 && isLate){
+      showToast("🗑️ 予約を取り消しました（今週の無料キャンセル適用・返却なし）");
+    }else if(penaltyTokens > 0){
+      showToast(`🗑️ 予約を取り消しました（返却なし・違約金${penaltyTokens}トークン）`);
+    }else{
+      showToast("🗑️ 予約を取り消しました（トークン返却なし）");
+    }
   }catch(error){
     console.error(error);
     showToast("⚠️ 取り消しに失敗しました");
   }
 };
-
 
 // ----- 完了（利用終了の記録） -----
 window.kbCompleteBooking = async function(bookingId){
@@ -1491,6 +1574,7 @@ function startKickboardListener(){
     });
 
     kbRender();
+    kbLoadCancellationUsage();
   }, function(error){
     console.error(error);
     showToast("⚠️ キックボード予約の読み込みに失敗しました");
