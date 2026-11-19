@@ -991,7 +991,7 @@ function kbRenderTokens(){
   box.innerHTML = `
     🎫 今週のトークン <strong>${left}</strong> / ${KB_WEEKLY_TOKENS}
     <div class="small">1マス(15分)につき1トークン消費。次回復：${kbNextReset()}</div>
-    <div class="small">キャンセル：週1回目は開始30分前までなら返却。30分以内は返却なし・違約金なし。2回目以降は返却なし、30分以内は予約コマ数分の違約金。</div>
+    <div class="small">キャンセル：毎週1回までなら返却。2回目以降は返却なし。予約した時間の30分前までにキャンセルしなかった場合、直前キャンセルとなりペナルティが発生し、次週にトークンが復活しなくなる。</div>
   `;
 }
 
